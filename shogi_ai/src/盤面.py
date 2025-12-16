@@ -58,18 +58,37 @@ class 盤面:
         }
 
         self.ou_position = {
-            "先手":(4,8),
-            "後手":(4,0)
+            "先手":[4,8],
+            "後手":[4,0]
         }
 
         self.turn = "先手"
+    
+    def change_turn(self):
+        if self.turn == "先手":
+            self.turn = "後手"
+        else:
+            self.turn = "先手"
+    
+    def change_ou_position(self, turn, nx, ny):
+        self.ou_position[turn] = [nx, ny]
+
+    def add_motigoma(self, turn, koma):
+        self.motigoma[turn].append(koma)
+    
+    def remove_motigoma(self, turn, koma):
+        self.motigoma[turn].remove(koma)
 
     def is_on_board(self, x, y):
         return 0 <= x < 9 and 0 <= y < 9
     
-    def has_koma(self, x, y):
-        return self.board[x][y] is not None
-    
+    def has_no_koma(self, x, y):
+        return self.board[x][y] is None
+
     def is_jigoma(self, x, y, turn):
-        p = self.board[x][y]
-        return self.has_koma(x, y) and p.sente_or_gote() == turn
+        koma = self.board[x][y]
+        return koma is not None and koma.sente_gote() == turn
+
+    def is_tekigoma(self, x, y, turn):
+        koma = self.board[x][y]
+        return koma is not None and koma.sente_gote() != turn
