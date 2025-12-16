@@ -64,4 +64,12 @@ class 盤面:
 
         self.turn = "先手"
 
+    def is_on_board(self, x, y):
+        return 0 <= x < 9 and 0 <= y < 9
     
+    def has_koma(self, x, y):
+        return self.board[x][y] is not None
+    
+    def is_jigoma(self, x, y, turn):
+        p = self.board[x][y]
+        return self.has_koma(x, y) and p.sente_or_gote() == turn
