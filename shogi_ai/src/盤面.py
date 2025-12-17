@@ -95,16 +95,47 @@ class 盤面:
     
     # 盤面の手のリストを返す
     def generate_board_moves(self, turn):
-        
+        moves = []
+
+        # 盤面を探索
+        for x in range(9):
+            for y in range(9):
+                # 自駒の場合
+                if self.is_jigoma(x, y, turn):
+                    koma = self.board[x][y]
+                    # 手を生成
+                    for dx, dy in koma.relative_moves():
+                        nx, ny = x + dx, y + dy
+                        while self.is_on_board(nx, ny):
+                            # 移動先が空マスの場合
+                            if self.has_no_koma(nx, ny):
+                                moves.append(手(koma, (x, y), (nx, ny)))
+                            # 移動先が敵駒の場合
+                            elif self.is_tekigoma(nx, ny, turn):
+                                moves.append(手(koma, (x, y), (nx, ny)))
+                                break
+                            # 移動先が自駒の場合
+                            elif self.is_jigoma(nx, ny, turn):
+                                break
+                            nx += dx
+                            ny += dy
+        return moves
 
     # 持ち駒の手のリストを返す
     def generate_drop_moves(self, turn):
+        moves = []
 
+        return moves
 
     # 将棋固有のルールを手に適応
     def filter_shogi_rules(self, moves, turn):
-        
+        legal_moves = []
+
+        return legal_moves
 
     # 盤面が王手状態かどうかを判定
     def filter_oute_rules(self, moves, turn):
+        legal_moves = []
+
+        return legal_moves
         
