@@ -28,3 +28,6 @@ class 銀(駒):
                     
                     (1, 1), (0, 1), (-1, 1)
                 ]
+    
+    def is_continuous(self, dx, dy):
+        return False

@@ -24,3 +24,12 @@ class 香(駒):
                 return [
                             (0, 1)
                 ]
+    
+    def is_continuous(self, dx, dy):
+        if self.nari:
+            return False
+        else:
+            if self.sente_gote == "先手":
+                return (dx, dy) == (0,-1)
+            else:
+                return (dx, dy) == (0, 1)

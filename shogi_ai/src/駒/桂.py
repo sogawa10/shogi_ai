@@ -24,3 +24,6 @@ class 桂(駒):
                 return [
                     (1, 2),         (-1, 2)
                 ]
+    
+    def is_continuous(self, dx, dy):
+        return False

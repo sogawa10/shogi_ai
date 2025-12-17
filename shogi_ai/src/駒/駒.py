@@ -27,7 +27,7 @@ class 駒:
     def relative_moves(self):
         raise NotImplementedError
     
-    def is_continuous(self, x, y):
+    def is_continuous(self, dx, dy):
         raise NotImplementedError
 
     # デバック用

@@ -24,3 +24,6 @@ class 歩(駒):
                 return [
                             (0, 1)
                 ]
+            
+    def is_continuous(self, dx, dy):
+        return False

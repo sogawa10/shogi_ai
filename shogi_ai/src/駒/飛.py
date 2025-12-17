@@ -14,3 +14,7 @@ class 飛(駒):
                 (1, 0),         (-1, 0),
                         (0, 1)
             ]
+        
+    def is_continuous(self, dx, dy):
+        return (dx, dy) == (1,-1) or (dx, dy) == (-1,-1) or (dx, dy) == (1, 1) or(dx, dy) == (-1, 1)
+    

@@ -1,4 +1,5 @@
 from 駒 import *
+from .手 import 手
 
 class 盤面:
     def __init__(self):
@@ -96,7 +97,6 @@ class 盤面:
     # 盤面の手のリストを返す
     def generate_board_moves(self, turn):
         moves = []
-
         # 盤面を探索
         for x in range(9):
             for y in range(9):
@@ -112,17 +112,20 @@ class 盤面:
                                 moves.append(手(koma, (x, y), (nx, ny)))
                             # 移動先が敵駒の場合
                             elif self.is_tekigoma(nx, ny, turn):
-                                moves.append(手(koma, (x, y), (nx, ny)))
+                                moves.append(手(koma, (x, y), (nx, ny), komadori=self.board[nx][ny]))
                                 break
                             # 移動先が自駒の場合
                             elif self.is_jigoma(nx, ny, turn):
+                                break
+                            # 連続移動できない場合
+                            if not koma.is_continuous(dx, dy):
                                 break
                             nx += dx
                             ny += dy
         return moves
 
-    # 持ち駒の手のリストを返す
-    def generate_drop_moves(self, turn):
+    # 打ち手のリストを返す
+    def generate_utite(self, turn):
         moves = []
 
         return moves

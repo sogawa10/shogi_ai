@@ -7,3 +7,6 @@ class 王(駒):
             (1, 0),         (-1, 0),
             (1, 1), (0, 1), (-1, 1)
         ]
+
+    def is_continuous(self, dx, dy):
+        return False
