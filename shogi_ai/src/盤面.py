@@ -58,8 +58,8 @@ class 盤面:
         }
 
         self.ou_position = {
-            "先手":[4,8],
-            "後手":[4,0]
+            "先手":(4,8),
+            "後手":(4,0)
         }
 
         self.turn = "先手"
@@ -71,7 +71,7 @@ class 盤面:
             self.turn = "先手"
     
     def change_ou_position(self, turn, nx, ny):
-        self.ou_position[turn] = [nx, ny]
+        self.ou_position[turn] = (nx, ny)
 
     def add_motigoma(self, turn, koma):
         self.motigoma[turn].append(koma)
@@ -92,3 +92,19 @@ class 盤面:
     def is_tekigoma(self, x, y, turn):
         koma = self.board[x][y]
         return koma is not None and koma.sente_gote() != turn
+    
+    # 盤面の手のリストを返す
+    def generate_board_moves(self, turn):
+        
+
+    # 持ち駒の手のリストを返す
+    def generate_drop_moves(self, turn):
+
+
+    # 将棋固有のルールを手に適応
+    def filter_shogi_rules(self, moves, turn):
+        
+
+    # 盤面が王手状態かどうかを判定
+    def filter_oute_rules(self, moves, turn):
+        
