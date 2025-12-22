@@ -138,7 +138,7 @@ class 盤面:
                     if self.has_no_koma(nx, ny):
                         moves.append(
                             手(koma, None, (nx, ny), utite=True)
-                    )
+                        )
         return moves
 
     # 将棋固有のルールを手に適応
