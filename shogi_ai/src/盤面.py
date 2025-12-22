@@ -109,10 +109,14 @@ class 盤面:
                         while self.is_on_board(nx, ny):
                             # 移動先が空マスの場合
                             if self.has_no_koma(nx, ny):
-                                moves.append(手(koma, (x, y), (nx, ny)))
+                                moves.append(
+                                    手(koma, (x, y), (nx, ny))
+                                )
                             # 移動先が敵駒の場合
                             elif self.is_tekigoma(nx, ny, turn):
-                                moves.append(手(koma, (x, y), (nx, ny), komadori=self.board[nx][ny]))
+                                moves.append(
+                                    手(koma, (x, y), (nx, ny), komadori=self.board[nx][ny])
+                                )
                                 break
                             # 移動先が自駒の場合
                             elif self.is_jigoma(nx, ny, turn):
@@ -127,7 +131,14 @@ class 盤面:
     # 打ち手のリストを返す
     def generate_utite(self, turn):
         moves = []
-
+        for koma in self.motigoma[turn]:
+            for nx in range(9):
+                for ny in range(9):
+                    # 打ち先が空マスの場合
+                    if self.has_no_koma(nx, ny):
+                        moves.append(
+                            手(koma, None, (nx, ny), utite=True)
+                    )
         return moves
 
     # 将棋固有のルールを手に適応
