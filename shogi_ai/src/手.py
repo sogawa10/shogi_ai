@@ -6,5 +6,5 @@ class 手:
     from_pos: tuple | None
     to_pos: tuple
     nari: bool=False
-    utite: bool=False
+    uchite: bool=False
     komadori: object | None = None

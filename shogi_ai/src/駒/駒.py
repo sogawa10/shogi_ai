@@ -24,6 +24,9 @@ class 駒:
     def is_motigoma(self):
         return self.x is None and self.y is None
 
+    def can_nari(self):
+        raise NotImplementedError
+
     def relative_moves(self):
         raise NotImplementedError
     

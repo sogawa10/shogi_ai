@@ -1,6 +1,9 @@
 from .駒 import 駒
 
 class 飛(駒):
+    def can_nari(self):
+        return True
+        
     def relative_moves(self):
         if self.nari:
             return [

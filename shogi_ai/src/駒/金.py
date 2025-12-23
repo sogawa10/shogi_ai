@@ -1,6 +1,9 @@
 from .駒 import 駒
 
 class 金(駒):
+    def can_nari(self):
+        return False
+        
     def relative_moves(self):
         if self.sente_gote == "先手":
             return [
