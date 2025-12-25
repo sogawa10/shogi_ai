@@ -36,3 +36,10 @@ class 香(駒):
                 return (dx, dy) == (0,-1)
             else:
                 return (dx, dy) == (0, 1)
+    
+    def symbol(self):
+        if self.nari:
+            symbol = "金"
+        else:
+            symbol = "香"
+        return symbol

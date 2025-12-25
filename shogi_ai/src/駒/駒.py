@@ -32,6 +32,9 @@ class 駒:
     
     def is_continuous(self, dx, dy):
         raise NotImplementedError
+    
+    def symbol(self):
+        raise NotImplementedError
 
     # デバック用
     def __repr__(self):

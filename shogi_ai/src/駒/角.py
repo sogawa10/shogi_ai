@@ -20,3 +20,10 @@ class 角(駒):
 
     def is_continuous(self, dx, dy):
         return (dx, dy) == (1,-1) or (dx, dy) == (-1,-1) or (dx, dy) == (1, 1) or(dx, dy) == (-1, 1)
+    
+    def symbol(self):
+        if self.nari:
+            symbol = "馬"
+        else:
+            symbol = "角"
+        return symbol

@@ -30,3 +30,10 @@ class 歩(駒):
             
     def is_continuous(self, dx, dy):
         return False
+
+    def symbol(self):
+        if self.nari:
+            symbol = "と"
+        else:
+            symbol = "歩"
+        return symbol

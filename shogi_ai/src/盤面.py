@@ -1,6 +1,7 @@
 from dataclasses import replace
-from 駒 import *
-from .手 import 手
+from copy import deepcopy
+from src.駒 import *
+from src.手 import 手
 
 class 盤面:
     def __init__(self):
@@ -89,23 +90,33 @@ class 盤面:
 
     def is_jigoma(self, x, y, turn):
         koma = self.board[x][y]
-        return koma is not None and koma.sente_gote() == turn
+        return koma is not None and koma.sente_or_gote() == turn
 
     def is_tekigoma(self, x, y, turn):
         koma = self.board[x][y]
-        return koma is not None and koma.sente_gote() != turn
+        return koma is not None and koma.sente_or_gote() != turn
 
-    def is_oute(self, turn):
+    def is_oute(self, which_ou):
         is_oute = False
-        if turn == "先手":
+        if which_ou == "先手":
             enemy_moves = self.generate_board_moves("後手")
         else:
             enemy_moves = self.generate_board_moves("先手")
         for move in enemy_moves:
-            if move.to_pos == self.ou_position[turn]:
+            if move.to_pos == self.ou_position[which_ou]:
                 is_oute = True
                 break
         return is_oute
+    
+    def is_checkmate(self, turn):
+        is_checkmate = False
+        if self.is_oute(turn):
+            bm = self.generate_board_moves(turn)
+            um = self.generate_uchite(turn)
+            lm = self.filter_shogi_rules(bm, um, check_uchifuzume=False)
+            if len(lm) == 0:
+                is_checkmate = True
+        return is_checkmate
     
     # 盤面の手のリストを返す
     def generate_board_moves(self, turn):
@@ -144,7 +155,12 @@ class 盤面:
     # 打ち手のリストを返す
     def generate_uchite(self, turn):
         moves = []
+        checked_types = []
         for koma in self.motigoma[turn]:
+            koma_type = type(koma)
+            if koma_type in checked_types:
+                continue
+            checked_types.append(koma_type)
             for nx in range(9):
                 for ny in range(9):
                     # 打ち先が空マスの場合
@@ -153,24 +169,61 @@ class 盤面:
                             手(koma, None, (nx, ny), uchite=True)
                         )
         return moves
+    
+    # 手を盤面に仮適用(王手・詰み・うち歩詰め判定用)
+    def apply_move(self, move):
+        new_board = deepcopy(self)
+        if move.uchite:
+            tx, ty = move.to_pos
+            new_koma = None
+            for koma in new_board.motigoma[self.turn]:
+                if type(koma) is type(move.koma):
+                    new_koma = koma
+                    break
+            else:
+                raise RuntimeError(f"{self.turn}の持ち駒に {type(move.koma).__name__} が存在しません")
+            new_koma.x = tx
+            new_koma.y = ty
+            new_board.board[tx][ty] = new_koma
+            new_board.remove_motigoma(self.turn, new_koma)
+        else:
+            fx, fy = move.from_pos
+            tx, ty = move.to_pos
+            new_koma = new_board.board[fx][fy]
+            if move.komadori is not None:
+                cap_koma = new_board.board[tx][ty]
+                cap_koma.x = None
+                cap_koma.y = None
+                cap_koma.nari = False
+                cap_koma.sente_gote = self.turn
+                new_board.add_motigoma(new_koma.sente_or_gote(), cap_koma)
+            new_board.board[fx][fy] = None
+            new_board.board[tx][ty] = new_koma
+            new_koma.x = tx
+            new_koma.y = ty
+            if move.nari:
+                new_koma.nari = True
+            if isinstance(new_koma, 王):
+                new_board.change_ou_position(new_koma.sente_or_gote(), tx, ty)
+        new_board.change_turn()
+        return new_board
 
     # 将棋固有のルールを手に適応
-    def filter_shogi_rules(self, board_moves, uchite_moves):
-        board_legal_moves = []
-        uchite_legal_moves = []
-        legal_moves = []
+    def filter_shogi_rules(self, board_moves, uchite_moves, check_uchifuzume=True):
         # 成りのルールを適応
+        board_legal_moves = []
         for move in board_moves:
             board_legal_moves.append(move)
             if move.koma.can_nari():
-                if move.koma.sente_or_gote() == "先手":
+                if self.turn == "先手":
                     if 0 <= move.from_pos[1] <=2 or 0 <= move.to_pos[1] <=2:
                         board_legal_moves.append(replace(move, nari=True))
-                elif move.koma.sente_or_gote() == "後手":
+                elif self.turn == "後手":
                     if 6 <= move.from_pos[1] <=8 or 6 <= move.to_pos[1] <=8:
                         board_legal_moves.append(replace(move, nari=True))
             
         # 二歩のルールを適応
+        uchite_legal_moves = []
         for move in uchite_moves:
             if not isinstance(move.koma, 歩):
                 uchite_legal_moves.append(move)
@@ -182,7 +235,7 @@ class 盤面:
                 if (
                     koma is not None
                     and isinstance(koma, 歩)
-                    and koma.sente_or_gote() == move.koma.sente_or_gote()
+                    and koma.sente_or_gote() == self.turn
                     and not koma.is_nari()
                 ):
                     nifu = True
@@ -191,21 +244,43 @@ class 盤面:
                 uchite_legal_moves.append(move)
         
         # 行き所のない駒のルールを適応
+        legal_moves1 = []
         for move in board_legal_moves + uchite_legal_moves:
             if isinstance(move.koma, (歩, 香)):
-                if move.koma.sente_or_gote() == "先手" and move.to_pos[1] == 0 and move.nari == False:
+                if self.turn == "先手" and move.to_pos[1] == 0 and move.nari == False:
                     continue
-                elif move.koma.sente_or_gote() == "後手" and move.to_pos[1] == 8 and move.nari == False:
+                elif self.turn == "後手" and move.to_pos[1] == 8 and move.nari == False:
                     continue
-                legal_moves.append(move)
+                legal_moves1.append(move)
             elif isinstance(move.koma, 桂):
-                if move.koma.sente_or_gote() == "先手" and move.to_pos[1] in (0, 1) and move.nari == False:
+                if self.turn == "先手" and move.to_pos[1] in (0, 1) and move.nari == False:
                     continue
-                elif move.koma.sente_or_gote() == "後手" and move.to_pos[1] in (7, 8) and move.nari == False:
+                elif self.turn == "後手" and move.to_pos[1] in (7, 8) and move.nari == False:
                     continue
-                legal_moves.append(move)
+                legal_moves1.append(move)
             else:
-                legal_moves.append(move)
-        return legal_moves
-
+                legal_moves1.append(move)
         
+        # 王手放置を除外
+        legal_moves2 = []
+        for move in legal_moves1:
+            next_board = self.apply_move(move)
+            if not next_board.is_oute(self.turn):
+                legal_moves2.append(move)
+        
+        # 打ち歩詰めを除外
+        final_moves = []
+        if check_uchifuzume:
+            for move in legal_moves2:
+                next_board = self.apply_move(move)
+                if move.uchite and isinstance(move.koma, 歩):
+                    if self.turn == "先手":
+                        enemy = "後手"
+                    else:
+                        enemy = "先手"
+                    if next_board.is_checkmate(enemy):
+                        continue
+                final_moves.append(move)
+        else:
+            final_moves=legal_moves2
+        return final_moves

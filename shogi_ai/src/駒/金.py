@@ -20,3 +20,6 @@ class 金(駒):
     
     def is_continuous(self, dx, dy):
         return False
+
+    def symbol(self):
+        return "金"

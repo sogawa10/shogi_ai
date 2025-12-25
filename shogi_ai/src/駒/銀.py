@@ -34,3 +34,10 @@ class 銀(駒):
     
     def is_continuous(self, dx, dy):
         return False
+    
+    def symbol(self):
+        if self.nari:
+            symbol = "金"
+        else:
+            symbol = "銀"
+        return symbol

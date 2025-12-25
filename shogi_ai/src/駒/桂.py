@@ -30,3 +30,10 @@ class 桂(駒):
     
     def is_continuous(self, dx, dy):
         return False
+    
+    def symbol(self):
+        if self.nari:
+            symbol = "金"
+        else:
+            symbol = "桂"
+        return symbol
