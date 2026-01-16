@@ -55,7 +55,7 @@ class 盤面:
         ou = 王("後手", x=4, y=0)
         self.board[4][0] = ou
 
-        self.motigoma = {
+        self.mochigoma = {
             "先手":[],
             "後手":[]
         }
@@ -76,11 +76,11 @@ class 盤面:
     def change_ou_position(self, turn, nx, ny):
         self.ou_position[turn] = (nx, ny)
 
-    def add_motigoma(self, turn, koma):
-        self.motigoma[turn].append(koma)
+    def add_mochigoma(self, turn, koma):
+        self.mochigoma[turn].append(koma)
     
-    def remove_motigoma(self, turn, koma):
-        self.motigoma[turn].remove(koma)
+    def remove_mochigoma(self, turn, koma):
+        self.mochigoma[turn].remove(koma)
 
     def is_on_board(self, x, y):
         return 0 <= x < 9 and 0 <= y < 9
@@ -156,7 +156,7 @@ class 盤面:
     def generate_uchite(self, turn):
         moves = []
         checked_types = []
-        for koma in self.motigoma[turn]:
+        for koma in self.mochigoma[turn]:
             koma_type = type(koma)
             if koma_type in checked_types:
                 continue
@@ -176,7 +176,7 @@ class 盤面:
         if move.uchite:
             tx, ty = move.to_pos
             new_koma = None
-            for koma in new_board.motigoma[self.turn]:
+            for koma in new_board.mochigoma[self.turn]:
                 if type(koma) is type(move.koma):
                     new_koma = koma
                     break
@@ -185,7 +185,7 @@ class 盤面:
             new_koma.x = tx
             new_koma.y = ty
             new_board.board[tx][ty] = new_koma
-            new_board.remove_motigoma(self.turn, new_koma)
+            new_board.remove_mochigoma(self.turn, new_koma)
         else:
             fx, fy = move.from_pos
             tx, ty = move.to_pos
@@ -196,7 +196,7 @@ class 盤面:
                 cap_koma.y = None
                 cap_koma.nari = False
                 cap_koma.sente_gote = self.turn
-                new_board.add_motigoma(new_koma.sente_or_gote(), cap_koma)
+                new_board.add_mochigoma(self.turn, cap_koma)
             new_board.board[fx][fy] = None
             new_board.board[tx][ty] = new_koma
             new_koma.x = tx
@@ -204,7 +204,7 @@ class 盤面:
             if move.nari:
                 new_koma.nari = True
             if isinstance(new_koma, 王):
-                new_board.change_ou_position(new_koma.sente_or_gote(), tx, ty)
+                new_board.change_ou_position(self.turn, tx, ty)
         new_board.change_turn()
         return new_board
 
@@ -278,7 +278,7 @@ class 盤面:
                         enemy = "後手"
                     else:
                         enemy = "先手"
-                    if next_board.is_checkmate(enemy):
+                    if next_board.is_oute(enemy):
                         continue
                 final_moves.append(move)
         else:
