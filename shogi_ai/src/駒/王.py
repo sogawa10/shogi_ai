@@ -16,7 +16,7 @@ class 王(駒):
     
     def symbol(self):
         if self.sente_gote == "先手":
-            symbol = "王"
+            symbol = "↑王"
         else:
-            symbol = "玉"
+            symbol = "↓玉"
         return symbol

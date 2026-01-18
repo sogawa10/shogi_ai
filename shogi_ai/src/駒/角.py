@@ -22,8 +22,14 @@ class 角(駒):
         return (dx, dy) == (1,-1) or (dx, dy) == (-1,-1) or (dx, dy) == (1, 1) or(dx, dy) == (-1, 1)
     
     def symbol(self):
-        if self.nari:
-            symbol = "馬"
+        if self.sente_gote == "先手":
+            if self.nari:
+                symbol = "↑馬"
+            else:
+                symbol = "↑角"
         else:
-            symbol = "角"
-        return symbol
+            if self.nari:
+                symbol = "↓馬"
+            else:
+                symbol = "↓角"
+        return symbol        

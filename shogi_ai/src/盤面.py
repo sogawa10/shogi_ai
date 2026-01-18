@@ -197,19 +197,19 @@ class 盤面:
                 cap_koma.nari = False
                 cap_koma.sente_gote = self.turn
                 new_board.add_mochigoma(self.turn, cap_koma)
-            new_board.board[fx][fy] = None
-            new_board.board[tx][ty] = new_koma
             new_koma.x = tx
             new_koma.y = ty
+            new_board.board[fx][fy] = None
+            new_board.board[tx][ty] = new_koma
             if move.nari:
-                new_koma.nari = True
+                new_koma.naru()
             if isinstance(new_koma, 王):
                 new_board.change_ou_position(self.turn, tx, ty)
         new_board.change_turn()
         return new_board
 
     # 将棋固有のルールを手に適応
-    def filter_shogi_rules(self, board_moves, uchite_moves, check_uchifuzume=True):
+    def filter_shogi_rules(self, board_moves, uchite, check_uchifuzume=True):
         # 成りのルールを適応
         board_legal_moves = []
         for move in board_moves:
@@ -224,7 +224,7 @@ class 盤面:
             
         # 二歩のルールを適応
         uchite_legal_moves = []
-        for move in uchite_moves:
+        for move in uchite:
             if not isinstance(move.koma, 歩):
                 uchite_legal_moves.append(move)
                 continue
@@ -278,7 +278,7 @@ class 盤面:
                         enemy = "後手"
                     else:
                         enemy = "先手"
-                    if next_board.is_oute(enemy):
+                    if next_board.is_checkmate(enemy):
                         continue
                 final_moves.append(move)
         else:

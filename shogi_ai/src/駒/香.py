@@ -38,8 +38,14 @@ class 香(駒):
                 return (dx, dy) == (0, 1)
     
     def symbol(self):
-        if self.nari:
-            symbol = "金"
+        if self.sente_gote == "先手":
+            if self.nari:
+                symbol = "↑金"
+            else:
+                symbol = "↑香"
         else:
-            symbol = "香"
+            if self.nari:
+                symbol = "↓金"
+            else:
+                symbol = "↓香"   
         return symbol

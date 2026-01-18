@@ -36,8 +36,14 @@ class 銀(駒):
         return False
     
     def symbol(self):
-        if self.nari:
-            symbol = "金"
+        if self.sente_gote == "先手":
+            if self.nari:
+                symbol = "↑金"
+            else:
+                symbol = "↑銀"
         else:
-            symbol = "銀"
+            if self.nari:
+                symbol = "↓金"
+            else:
+                symbol = "↓銀"
         return symbol

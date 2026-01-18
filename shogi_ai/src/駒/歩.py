@@ -32,8 +32,14 @@ class 歩(駒):
         return False
 
     def symbol(self):
-        if self.nari:
-            symbol = "と"
+        if self.sente_gote == "先手":
+            if self.nari:
+                symbol = "↑と"
+            else:
+                symbol = "↑歩"
         else:
-            symbol = "歩"
+            if self.nari:
+                symbol = "↓と"
+            else:
+                symbol = "↓歩"
         return symbol

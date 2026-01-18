@@ -32,8 +32,14 @@ class 桂(駒):
         return False
     
     def symbol(self):
-        if self.nari:
-            symbol = "金"
+        if self.sente_gote == "先手":
+            if self.nari:
+                symbol = "↑金"
+            else:
+                symbol = "↑桂"
         else:
-            symbol = "桂"
+            if self.nari:
+                symbol = "↓金"
+            else:
+                symbol = "↓桂"
         return symbol

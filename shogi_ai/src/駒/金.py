@@ -22,4 +22,9 @@ class 金(駒):
         return False
 
     def symbol(self):
-        return "金"
+        if self.sente_gote == "先手":
+            symbol = "↑金"
+        else:
+            symbol = "↓金"
+        return symbol   
+        

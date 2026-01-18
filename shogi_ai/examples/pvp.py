@@ -7,18 +7,20 @@ def print_board(board):
         0: '一', 1: '二', 2: '三', 3: '四', 4: '五', 5: '六', 6: '七', 7: '八', 8: '九'
     }
     print()
-    print("　　　　　　　　　　　　　　▽後手　")
-    print("９　８　７　６　５　４　３　２　１　")
+    print("———————————————————————————————————————————————————————————————————————")
+    print(" 　　 　　 　　 　　 　　 　　 　　 ▽後手 　")
+    print(" ９　 ８　 ７　 ６　 ５　 ４　 ３　 ２　 １　")
     print()
     for y in range(9):
         for x in range(8, -1, -1):
             if board.board[x][y] == None:
-                print("・", end='　')
+                print(" ・", end='　')
             else:
                 print(board.board[x][y].symbol(), end='　')
         print(" ", end='')
         print(int2kanji_map[y])
-    print("　△先手　　　　　　　　　　　　　　")
+        print()
+    print("　 △先手 　　 　　 　　 　　 　　 　　 　　 ")
     print()
 
 def print_mochigoma(board):
@@ -36,6 +38,7 @@ def input_move(board):
     print("☆ 入力例 ☆")
     print("移動：fx fy tx ty [成]")
     print("打つ：駒 tx ty")
+    print()
     input_move = input(board.turn + "の手番> ").strip().split()
 
     # 移動
@@ -44,6 +47,7 @@ def input_move(board):
             fx, fy, tx, ty = map(int, input_move[:4])
         except ValueError:
             return None
+        fx, fy, tx, ty = fx - 1, fy - 1, tx - 1, ty - 1
         if not (0 <= fx < 9 and 0 <= fy < 9 and 0 <= tx < 9 and 0 <= ty < 9):
             return None
         if len(input_move) == 5:
@@ -66,6 +70,7 @@ def input_move(board):
             tx, ty = map(int, input_move[1:])
         except ValueError:
             return None
+        tx, ty = tx - 1, ty - 1
         if not (0 <= tx < 9 and 0 <= ty < 9):
             return None
         for koma in board.mochigoma[board.turn]:
@@ -76,9 +81,43 @@ def input_move(board):
 
 def main():
     board = 盤面()
-    print_board(board)
-    print_mochigoma(board)
-    input_move(board)
+    while True:
+        # 盤面と持ち駒を表示し，手の入力を受け付ける
+        print_board(board)
+        print_mochigoma(board)
+        in_move = input_move(board)
+        if in_move is None:
+            print("☆ 入力エラーです 正しく入力してください ☆")
+            continue
+        # 盤面の合法手を生成する
+        board_moves = board.generate_board_moves(board.turn)
+        uchite = board.generate_uchite(board.turn)
+        legal_moves = board.filter_shogi_rules(board_moves, uchite)
+        # 入力された手が合法手かどうか確認する
+        for legal_move in legal_moves:
+            if (
+                type(legal_move.koma) is type(in_move.koma)
+                and legal_move.from_pos == in_move.from_pos
+                and legal_move.to_pos == in_move.to_pos
+                and legal_move.nari == in_move.nari
+                and legal_move.uchite == in_move.uchite
+            ):
+                board = board.apply_move(legal_move)
+                break
+        else:
+            print("☆ 非合法手です ☆")
+            continue
+        # 千日手・持将棋・最大手数判定
+        # 終了判定
+        if board.is_checkmate(board.turn):
+            if board.turn == "先手":
+                enemy = "後手"
+            else:
+                enemy = "先手"
+            print_board(board)
+            print("「" + enemy + "」の勝利!!")
+            print()
+            break
 
 if __name__ == "__main__":
     main()
