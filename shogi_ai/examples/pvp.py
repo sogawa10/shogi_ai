@@ -79,8 +79,52 @@ def input_move(board):
         return None
     return None
 
+# 千日手判定用（盤面をタプルに変換）
+def serialize_board(board):
+    outer = []
+    for y in range(9):
+        column = []
+        for x in range(9):
+            koma = board.board[x][y]
+            if koma is None:
+                column.append(None)
+            else:
+                column.append((koma.symbol(), koma.sente_or_gote()))
+        outer.append(tuple(column))
+    return tuple(outer)
+
+# 千日手判定用（持ち駒を駒種ごとの枚数に正規化）
+def serialize_mochigoma(mochigoma):
+    counter = {}
+    for koma in mochigoma:
+        if type(koma).__name__ not in counter:
+            counter[type(koma).__name__] = 1
+        else:
+            counter[type(koma).__name__] += 1
+    return tuple(sorted(counter.items()))
+
+# 千日手判定用（盤面の状態+持ち駒の状態+ターンを，==で比較可能なタプルに変換）
+def position_key(board):
+    board_key = tuple(
+        serialize_board(board)
+    )
+
+    mochigoma_key = (
+        serialize_mochigoma(board.mochigoma["先手"]),
+        serialize_mochigoma(board.mochigoma["後手"])
+    )
+
+    return (board_key, mochigoma_key, board.turn)
+
 def main():
     board = 盤面()
+    MAX_MOVES = 512
+    sennichite_counter = 0
+    move_count = 1
+    position_history = {}
+    position_sequence = []
+    position_history[position_key(board)] = 1
+    position_sequence.append((position_key(board), None))
     while True:
         # 盤面と持ち駒を表示し，手の入力を受け付ける
         print_board(board)
@@ -107,7 +151,69 @@ def main():
         else:
             print("☆ 非合法手です ☆")
             continue
-        # 千日手・持将棋・最大手数判定
+        # 最大手数判定
+        move_count += 1
+        if move_count > MAX_MOVES:
+            print_board(board)
+            print("最大手数に達しました")
+            print("引き分けです")
+            print()
+            break
+        # 千日手判定
+        key = position_key(board)
+        is_oute = board.is_oute(board.turn)
+        if is_oute:
+            if board.turn == "先手":
+                enemy = "後手"
+            else:
+                enemy = "先手"
+        else:
+            enemy = None
+        position_history[key] = position_history.get(key, 0) + 1
+        position_sequence.append((key, enemy))
+        if position_history[key] == 4:
+            print_board(board)
+            first = 0
+            for i, (past_key, _) in enumerate(position_sequence):
+                if past_key == key:
+                    first = i
+                    break
+            if position_sequence[first][1] is not None:
+                start_index = first
+            elif position_sequence[first + 1][1] is not None:
+                start_index = first + 1
+            else:
+                start_index = None
+            is_continuous_check = False
+            if start_index is not None:
+                oute_checker = position_sequence[start_index][1]
+                is_continuous_check = True
+                for i, (_, e) in enumerate(position_sequence[start_index:]):
+                    if i % 2 == 1:
+                        continue
+                    if e != oute_checker:
+                        is_continuous_check = False
+                        break
+            if is_continuous_check:
+                print("連続王手の千日手です")
+                print("「" + oute_checker + "」の反則負けです")
+                print()
+                break
+            else:
+                print("千日手です")
+                print("先手・後手を入れ替えて指し直します")
+                print()
+                sennichite_counter += 1
+                board = 盤面()
+                if sennichite_counter % 2 == 1:
+                    board.change_turn()
+                move_count = 1
+                position_history.clear()
+                position_sequence.clear()
+                position_history[position_key(board)] = 1
+                position_sequence.append((position_key(board), None))
+                continue
+        # 持将棋
         # 終了判定
         if board.is_checkmate(board.turn):
             if board.turn == "先手":
