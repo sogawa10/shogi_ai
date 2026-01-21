@@ -116,10 +116,38 @@ def position_key(board):
 
     return (board_key, mochigoma_key, board.turn)
 
+# 持将棋の判定用（入玉判定）
+def ou_is_in_enemy_zone(board):
+    _ , ys = board.ou_position["先手"]
+    _ , yg = board.ou_position["後手"]
+    return ys <= 2 or yg >= 6
+
+# 持将棋の判定用（点数計算）
+def count_jishogi_points(board, turn):
+    score = 0
+    for y in range(9):
+        for x in range(9):
+            koma = board.board[x][y]
+            if koma is None or koma.owner != turn:
+                continue
+            if isinstance(koma, 王):
+                continue
+            if isinstance(koma, 飛) or isinstance(koma, 角):
+                score += 5
+            else:
+                score += 1
+    for koma in board.mochigoma[turn]:
+        if isinstance(koma, 飛) or isinstance(koma, 角):
+            score += 5
+        else:
+            score += 1
+    return score
+
 def main():
     board = 盤面()
     MAX_MOVES = 512
     sennichite_counter = 0
+    jishogi_counter = 0
     move_count = 1
     position_history = {}
     position_sequence = []
@@ -214,6 +242,37 @@ def main():
                 position_sequence.append((position_key(board), None))
                 continue
         # 持将棋
+        if ou_is_in_enemy_zone(board):
+            s = count_jishogi_points(board, "先手")
+            g = count_jishogi_points(board, "後手")
+
+            if s >= 24 and g >= 24:
+                print_board(board)
+                print("両者持将棋です")
+                print("先手・後手を入れ替えて指し直します")
+                print()
+                jishogi_counter += 1
+                board = 盤面()
+                if jishogi_counter % 2 == 1:
+                    board.change_turn()
+                move_count = 1
+                position_history.clear()
+                position_sequence.clear()
+                position_history[position_key(board)] = 1
+                position_sequence.append((position_key(board), None))
+                continue
+            if s >= 24 and g < 24:
+                print_board(board)
+                print("持将棋です")
+                print("「後手」の負けです")
+                print()
+                break
+            if g >= 24 and s < 24:
+                print_board(board)
+                print("持将棋です")
+                print("「先手」の負けです")
+                print()
+                break
         # 終了判定
         if board.is_checkmate(board.turn):
             if board.turn == "先手":
