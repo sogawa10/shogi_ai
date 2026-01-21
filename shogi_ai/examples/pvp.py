@@ -128,7 +128,7 @@ def count_jishogi_points(board, turn):
     for y in range(9):
         for x in range(9):
             koma = board.board[x][y]
-            if koma is None or koma.owner != turn:
+            if koma is None or koma.sente_or_gote() != turn:
                 continue
             if isinstance(koma, 王):
                 continue
