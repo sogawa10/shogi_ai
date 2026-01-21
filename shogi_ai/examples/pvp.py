@@ -180,8 +180,8 @@ def main():
                     break
             if position_sequence[first][1] is not None:
                 start_index = first
-            elif position_sequence[first + 1][1] is not None:
-                start_index = first + 1
+            elif position_sequence[first - 1][1] is not None:
+                start_index = first - 1
             else:
                 start_index = None
             is_continuous_check = False
