@@ -1,9 +1,9 @@
-from src.盤面 import 盤面
-from src.駒 import *
-from src.手 import 手
-from src.対戦用関数 import *
+from shogi_ai.対局用.盤面 import 盤面
+from shogi_ai.駒 import *
+from shogi_ai.対局用.手 import 手
+from shogi_ai.対局用.対局用関数 import *
 
-def main():
+def pvp():
     board = 盤面()
     MAX_MOVES = 512
     sennichite_counter = 0
@@ -143,6 +143,3 @@ def main():
             print("「" + enemy + "」の勝利!!")
             print()
             break
-
-if __name__ == "__main__":
-    main()

@@ -1,7 +1,7 @@
 from dataclasses import replace
 from copy import deepcopy
-from src.駒 import *
-from src.手 import 手
+from shogi_ai.駒 import *
+from shogi_ai.対局用.手 import 手
 
 class 盤面:
     def __init__(self):
