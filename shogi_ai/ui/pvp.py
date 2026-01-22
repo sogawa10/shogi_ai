@@ -6,8 +6,7 @@ from shogi_ai.対局用.対局用関数 import *
 def pvp():
     board = 盤面()
     MAX_MOVES = 512
-    sennichite_counter = 0
-    jishogi_counter = 0
+    last_move = None
     move_count = 1
     position_history = {}
     position_sequence = []
@@ -15,7 +14,7 @@ def pvp():
     position_sequence.append((position_key(board), None))
     while True:
         # 盤面と持ち駒を表示し，手の入力を受け付ける
-        print_board(board)
+        print_board(board, last_move)
         print_mochigoma(board)
         in_move = input_move(board)
         if in_move is None:
@@ -35,6 +34,7 @@ def pvp():
                 and legal_move.uchite == in_move.uchite
             ):
                 board = board.apply_move(legal_move)
+                last_move = legal_move
                 break
         else:
             print("☆ 非合法手です ☆")
@@ -42,7 +42,7 @@ def pvp():
         # 最大手数判定
         move_count += 1
         if move_count > MAX_MOVES:
-            print_board(board)
+            print_board(board, last_move)
             print("最大手数に達しました")
             print("引き分けです")
             print()
@@ -60,7 +60,7 @@ def pvp():
         position_history[key] = position_history.get(key, 0) + 1
         position_sequence.append((key, enemy))
         if position_history[key] == 4:
-            print_board(board)
+            print_board(board, last_move)
             first = 0
             for i, (past_key, _) in enumerate(position_sequence):
                 if past_key == key:
@@ -89,46 +89,28 @@ def pvp():
                 break
             else:
                 print("千日手です")
-                print("先手・後手を入れ替えて指し直します")
+                print("引き分けです")
                 print()
-                sennichite_counter += 1
-                board = 盤面()
-                if sennichite_counter % 2 == 1:
-                    board.change_turn()
-                move_count = 1
-                position_history.clear()
-                position_sequence.clear()
-                position_history[position_key(board)] = 1
-                position_sequence.append((position_key(board), None))
-                continue
+                break
         # 持将棋
         if ou_is_in_enemy_zone(board):
             s = count_jishogi_points(board, "先手")
             g = count_jishogi_points(board, "後手")
 
             if s >= 24 and g >= 24:
-                print_board(board)
+                print_board(board, last_move)
                 print("両者持将棋です")
-                print("先手・後手を入れ替えて指し直します")
+                print("引き分けです")
                 print()
-                jishogi_counter += 1
-                board = 盤面()
-                if jishogi_counter % 2 == 1:
-                    board.change_turn()
-                move_count = 1
-                position_history.clear()
-                position_sequence.clear()
-                position_history[position_key(board)] = 1
-                position_sequence.append((position_key(board), None))
-                continue
+                break
             if s >= 24 and g < 24:
-                print_board(board)
+                print_board(board, last_move)
                 print("持将棋です")
                 print("「後手」の負けです")
                 print()
                 break
             if g >= 24 and s < 24:
-                print_board(board)
+                print_board(board, last_move)
                 print("持将棋です")
                 print("「先手」の負けです")
                 print()
@@ -139,7 +121,7 @@ def pvp():
                 enemy = "後手"
             else:
                 enemy = "先手"
-            print_board(board)
+            print_board(board, last_move)
             print("「" + enemy + "」の勝利!!")
             print()
             break

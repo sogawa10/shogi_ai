@@ -2,13 +2,16 @@ from shogi_ai.対局用.盤面 import 盤面
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
 
-def print_board(board):
+def print_board(board, last_move):
     int2kanji_map = {
         0: '一', 1: '二', 2: '三', 3: '四', 4: '五', 5: '六', 6: '七', 7: '八', 8: '九'
     }
     print()
     print("———————————————————————————————————————————————————————————————————————")
-    print(" 　　 　　 　　 　　 　　 　　 　　 ▽後手 　")
+    print()
+    if last_move is not None:
+        print("直前の手：", last_move.to_string())
+        print()
     print(" ９　 ８　 ７　 ６　 ５　 ４　 ３　 ２　 １　")
     print()
     for y in range(9):
@@ -20,7 +23,6 @@ def print_board(board):
         print(" ", end='')
         print(int2kanji_map[y])
         print()
-    print("　 △先手 　　 　　 　　 　　 　　 　　 　　 ")
     print()
 
 def print_mochigoma(board):
