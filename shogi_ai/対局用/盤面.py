@@ -1,5 +1,4 @@
 from dataclasses import replace
-from copy import deepcopy
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
 
@@ -9,7 +8,7 @@ class 盤面:
         # fu fu fu fu fu fu fu fu fu 
         #    ka                hi
         # ky ke gi ki ou ki gi ke ky
-        self.board = [[None for y in range(9)] for x in range(9)]
+        self.board = [[None for x in range(9)] for y in range(9)]
 
         for x in range(9):
             fu = 歩("先手", x=x, y=6)
@@ -118,6 +117,25 @@ class 盤面:
                 is_checkmate = True
         return is_checkmate
     
+    def copy(self):
+        new_board = 盤面.__new__(盤面)
+        new_board.board = [[None for x in range(9)] for y in range(9)]
+        for y in range(9):
+            for x in range(9):
+                koma = self.board[x][y]
+                if koma is not None:
+                    new_board.board[x][y] = koma.copy()
+        new_board.mochigoma = {
+            "先手": [k.copy() for k in self.mochigoma["先手"]],
+            "後手": [k.copy() for k in self.mochigoma["後手"]],
+        }
+        new_board.ou_position = {
+            "先手": self.ou_position["先手"],
+            "後手": self.ou_position["後手"],
+        }
+        new_board.turn = self.turn
+        return new_board
+    
     # 盤面の手のリストを返す
     def generate_board_moves(self, turn):
         moves = []
@@ -172,7 +190,7 @@ class 盤面:
     
     # 手を盤面に仮適用(王手・詰み・うち歩詰め判定用)
     def apply_move(self, move):
-        new_board = deepcopy(self)
+        new_board = self.copy()
         if move.uchite:
             tx, ty = move.to_pos
             new_koma = None
@@ -246,13 +264,13 @@ class 盤面:
         # 行き所のない駒のルールを適応
         legal_moves1 = []
         for move in board_legal_moves + uchite_legal_moves:
-            if isinstance(move.koma, (歩, 香)):
+            if isinstance(move.koma, (歩, 香)) and move.koma.is_nari() == False:
                 if self.turn == "先手" and move.to_pos[1] == 0 and move.nari == False:
                     continue
                 elif self.turn == "後手" and move.to_pos[1] == 8 and move.nari == False:
                     continue
                 legal_moves1.append(move)
-            elif isinstance(move.koma, 桂):
+            elif isinstance(move.koma, 桂) and move.koma.is_nari() == False:
                 if self.turn == "先手" and move.to_pos[1] in (0, 1) and move.nari == False:
                     continue
                 elif self.turn == "後手" and move.to_pos[1] in (7, 8) and move.nari == False:

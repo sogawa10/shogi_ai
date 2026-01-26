@@ -5,9 +5,7 @@ from shogi_ai.対局用.対局用関数 import *
 
 def pvp():
     board = 盤面()
-    MAX_MOVES = 512
     last_move = None
-    move_count = 1
     position_history = {}
     position_sequence = []
     position_history[position_key(board)] = 1
@@ -39,14 +37,6 @@ def pvp():
         else:
             print("☆ 非合法手です ☆")
             continue
-        # 最大手数判定
-        move_count += 1
-        if move_count > MAX_MOVES:
-            print_board(board, last_move)
-            print("最大手数に達しました")
-            print("引き分けです")
-            print()
-            break
         # 千日手判定
         key = position_key(board)
         is_oute = board.is_oute(board.turn)

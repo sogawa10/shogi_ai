@@ -23,6 +23,14 @@ class 駒:
     
     def is_motigoma(self):
         return self.x is None and self.y is None
+    
+    def copy(self):
+        return type(self)(
+            self.sente_or_gote(),
+            self.x,
+            self.y,
+            self.nari
+        )
 
     def can_nari(self):
         raise NotImplementedError
