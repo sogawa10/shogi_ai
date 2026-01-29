@@ -7,13 +7,12 @@ from shogi_ai.ai.ai import ai_think
 def vs_ai():
     board = 盤面()
     last_move = None
-    move_count = 1
     position_history = {}
     position_sequence = []
     position_history[position_key(board)] = 1
     position_sequence.append((position_key(board), None))
     while True:
-        if move_count % 2 == 1:
+        if board.get_move_count() % 2 == 1:
             # 盤面と持ち駒を表示し，手の入力を受け付ける
             print_board(board, last_move)
             print_mochigoma(board)
@@ -49,7 +48,30 @@ def vs_ai():
             ai_move = ai_think(board, depth=3)
             board = board.apply_move(ai_move)
             last_move = ai_move
-        move_count += 1
+        # 終了判定
+        if board.is_checkmate(board.turn):
+            if board.turn == "先手":
+                enemy = "後手"
+            else:
+                enemy = "先手"
+            print_board(board, last_move)
+            print("「" + enemy + "」の勝利!!")
+            print()
+            break
+        # 入玉宣言法
+        if ou_is_in_enemy_zone(board):
+            if not board.is_oute(board.turn):
+                if board.turn == "先手":
+                    point = 28
+                else:
+                    point = 27
+                score, in_count = count_nyugyoku_points(board)
+                if in_count >= 10 and score >= point:
+                    print_board(board, last_move)
+                    print("入玉宣言法により...")
+                    print("「" + board.turn + "」の勝利!!")
+                    print()
+                    break
         # 千日手判定
         key = position_key(board)
         is_oute = board.is_oute(board.turn)
@@ -95,36 +117,10 @@ def vs_ai():
                 print("引き分けです")
                 print()
                 break
-        # 持将棋
-        if ou_is_in_enemy_zone(board):
-            s = count_jishogi_points(board, "先手")
-            g = count_jishogi_points(board, "後手")
-
-            if s >= 24 and g >= 24:
-                print_board(board, last_move)
-                print("両者持将棋です")
-                print("引き分けです")
-                print()
-                break
-            if s >= 24 and g < 24:
-                print_board(board, last_move)
-                print("持将棋です")
-                print("「後手」の負けです")
-                print()
-                break
-            if g >= 24 and s < 24:
-                print_board(board, last_move)
-                print("持将棋です")
-                print("「先手」の負けです")
-                print()
-                break
-        # 終了判定
-        if board.is_checkmate(board.turn):
-            if board.turn == "先手":
-                enemy = "後手"
-            else:
-                enemy = "先手"
+        # 最大手数判定
+        if board.get_move_count() - 1 >= 500:
             print_board(board, last_move)
-            print("「" + enemy + "」の勝利!!")
+            print("最大手数に達しました")
+            print("引き分けです")
             print()
             break

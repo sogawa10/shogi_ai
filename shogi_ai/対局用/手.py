@@ -20,6 +20,6 @@ class 手:
             return (int2zenkaku_map[self.to_pos[0]] + int2kanji_map[self.to_pos[1]] + self.koma.symbol()[1] + "打")
         else:
             if self.nari:
-                return (int2zenkaku_map[self.from_pos[0]] + int2kanji_map[self.from_pos[1]] + int2zenkaku_map[self.to_pos[0]] + int2kanji_map[self.to_pos[1]] + self.koma.symbol()[1] + "成")
+                return (int2zenkaku_map[self.to_pos[0]] + int2kanji_map[self.to_pos[1]] + self.koma.symbol()[1] + "成 （" + int2zenkaku_map[self.from_pos[0]] + int2kanji_map[self.from_pos[1]] + "）")
             else:
-                return (int2zenkaku_map[self.from_pos[0]] + int2kanji_map[self.from_pos[1]] + int2zenkaku_map[self.to_pos[0]] + int2kanji_map[self.to_pos[1]] + self.koma.symbol()[1])
+                return (int2zenkaku_map[self.to_pos[0]] + int2kanji_map[self.to_pos[1]] + self.koma.symbol()[1] + " （" + int2zenkaku_map[self.from_pos[0]] + int2kanji_map[self.from_pos[1]] + "）")

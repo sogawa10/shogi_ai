@@ -65,6 +65,10 @@ class 盤面:
         }
 
         self.turn = "先手"
+        self.move_count = 1
+    
+    def get_move_count(self):
+        return self.move_count
     
     def change_turn(self):
         if self.turn == "先手":
@@ -94,6 +98,36 @@ class 盤面:
     def is_tekigoma(self, x, y, turn):
         koma = self.board[x][y]
         return koma is not None and koma.sente_or_gote() != turn
+    
+    def is_attacked(self, x, y, turn):
+        if turn == "先手":
+            enemy = "後手"
+        else:
+            enemy = "先手"
+        moves = self.generate_board_moves(enemy)
+        for move in moves:
+            if move.to_pos == (x, y):
+                return True
+        return False
+    
+    def is_defended(self, x, y, turn):
+        for fx in range(9):
+            for fy in range(9):
+                if not self.is_jigoma(fx, fy, turn):
+                    continue
+                koma = self.board[fx][fy]
+                for dx, dy in koma.relative_moves():
+                    nx, ny = fx + dx, fy + dy
+                    while self.is_on_board(nx, ny):
+                        if (nx, ny) == (x, y):
+                            return True
+                        if not self.has_no_koma(nx, ny):
+                            break
+                        if not koma.is_continuous(dx, dy):
+                            break
+                        nx += dx
+                        ny += dy
+        return False
 
     def is_oute(self, which_ou):
         is_oute = False
@@ -134,6 +168,7 @@ class 盤面:
             "後手": self.ou_position["後手"],
         }
         new_board.turn = self.turn
+        new_board.move_count = self.move_count
         return new_board
     
     # 盤面の手のリストを返す
@@ -224,6 +259,7 @@ class 盤面:
             if isinstance(new_koma, 王):
                 new_board.change_ou_position(self.turn, tx, ty)
         new_board.change_turn()
+        new_board.move_count += 1
         return new_board
 
     # 将棋固有のルールを手に適応

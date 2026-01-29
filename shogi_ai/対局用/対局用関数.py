@@ -118,19 +118,29 @@ def position_key(board):
 
     return (board_key, mochigoma_key, board.turn)
 
-# 持将棋の判定用（入玉判定）
+# 入玉宣言法の判定用（入玉判定）
 def ou_is_in_enemy_zone(board):
-    _ , ys = board.ou_position["先手"]
-    _ , yg = board.ou_position["後手"]
-    return ys <= 2 or yg >= 6
+    _ , y = board.ou_position[board.turn]
+    if board.turn == "先手":
+        if y <= 2:
+            return True
+    else:
+        if y >= 6:
+            return True
+    return False
 
-# 持将棋の判定用（点数計算）
-def count_jishogi_points(board, turn):
+# 入玉宣言法の判定用（点数計算）
+def count_nyugyoku_points(board):
     score = 0
-    for y in range(9):
+    in_count = 0
+    if board.turn == "先手":
+        enemy_zone = range(0, 3)
+    else:
+        enemy_zone = range(6, 9)
+    for y in enemy_zone:
         for x in range(9):
             koma = board.board[x][y]
-            if koma is None or koma.sente_or_gote() != turn:
+            if koma is None or koma.sente_or_gote() != board.turn:
                 continue
             if isinstance(koma, 王):
                 continue
@@ -138,9 +148,10 @@ def count_jishogi_points(board, turn):
                 score += 5
             else:
                 score += 1
-    for koma in board.mochigoma[turn]:
+            in_count += 1
+    for koma in board.mochigoma[board.turn]:
         if isinstance(koma, 飛) or isinstance(koma, 角):
             score += 5
         else:
             score += 1
-    return score
+    return score, in_count
