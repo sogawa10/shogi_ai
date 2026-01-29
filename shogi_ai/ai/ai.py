@@ -12,6 +12,7 @@ def ai_think(board, depth=3):
     for move in legal_moves:
         new_board = board.copy()
         new_board = new_board.apply_move(move)
+        # ここから並列処理して，全評価値が出てから比較するように変更予定したい
         score = -1 * tree_search(new_board, depth-1, float('-inf'), float('inf'))
         if score > best_score:
             best_score = score

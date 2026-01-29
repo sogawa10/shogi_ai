@@ -51,10 +51,8 @@ def tree_search(board, depth, alpha, beta):
         new_board = board.copy()
         new_board = new_board.apply_move(move)
         score = -1 * tree_search(new_board, depth-1, -1*beta, -1*alpha)
-        if score > best_score:
-            best_score = score
-        if best_score > alpha:
-            alpha = best_score
+        best_score = max(best_score, score)
+        alpha = max(alpha, best_score)
         if alpha >= beta:
             break
     return best_score
