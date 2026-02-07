@@ -123,9 +123,9 @@ def tree_search(board, depth, alpha, beta):
     legal_moves = board.filter_shogi_rules(board_moves, uchite)
     random.shuffle(legal_moves)
     for move in legal_moves:
-        new_board = board.copy()
-        new_board = new_board.apply_move(move)
-        score = -1 * tree_search(new_board, depth-1, -1*beta, -1*alpha)
+        history = board.apply_move(move)
+        score = -1 * tree_search(board, depth-1, -1*beta, -1*alpha)
+        board.ando_move(history)
         best_score = max(best_score, score)
         alpha = max(alpha, best_score)
         if alpha >= beta:

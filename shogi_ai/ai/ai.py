@@ -4,12 +4,12 @@ from shogi_ai.対局用.盤面 import 盤面
 from shogi_ai.ai.ai用関数 import *
 
 def evaluate(board, move, depth):
-    new_board = board.copy()
-    new_board = new_board.apply_move(move)
-    score = -1 * tree_search(new_board, depth-1, float('-inf'), float('inf'))
+    history = board.apply_move(move)
+    score = -1 * tree_search(board, depth-1, float('-inf'), float('inf'))
+    board.ando_move(history)
     return score, move
 
-def ai_think(board, depth=3):
+def ai_think(board, depth=4):
     best_move = None
     best_score = float('-inf')
     board_moves = board.generate_board_moves(board.turn)

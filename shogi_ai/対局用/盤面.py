@@ -83,7 +83,10 @@ class 盤面:
         self.mochigoma[turn].append(koma)
     
     def remove_mochigoma(self, turn, koma):
-        self.mochigoma[turn].remove(koma)
+        for k in self.mochigoma[turn]:
+            if type(k) == type(koma):
+                self.mochigoma[turn].remove(k)
+                break
 
     def is_on_board(self, x, y):
         return 0 <= x < 9 and 0 <= y < 9
@@ -151,26 +154,6 @@ class 盤面:
                 is_checkmate = True
         return is_checkmate
     
-    def copy(self):
-        new_board = 盤面.__new__(盤面)
-        new_board.board = [[None for x in range(9)] for y in range(9)]
-        for y in range(9):
-            for x in range(9):
-                koma = self.board[x][y]
-                if koma is not None:
-                    new_board.board[x][y] = koma.copy()
-        new_board.mochigoma = {
-            "先手": [k.copy() for k in self.mochigoma["先手"]],
-            "後手": [k.copy() for k in self.mochigoma["後手"]],
-        }
-        new_board.ou_position = {
-            "先手": self.ou_position["先手"],
-            "後手": self.ou_position["後手"],
-        }
-        new_board.turn = self.turn
-        new_board.move_count = self.move_count
-        return new_board
-    
     # 盤面の手のリストを返す
     def generate_board_moves(self, turn):
         moves = []
@@ -225,46 +208,79 @@ class 盤面:
     
     # 手を盤面に適用
     def apply_move(self, move):
-        new_board = self.copy()
+        histry = {
+            "move": move,
+            "captured_nari": False
+        }
         if move.uchite:
             tx, ty = move.to_pos
-            new_koma = None
-            for koma in new_board.mochigoma[self.turn]:
-                if type(koma) is type(move.koma):
-                    new_koma = koma
-                    break
-            else:
-                raise RuntimeError(f"{self.turn}の持ち駒に {type(move.koma).__name__} が存在しません")
+            new_koma = move.koma
             new_koma.x = tx
             new_koma.y = ty
-            new_board.board[tx][ty] = new_koma
-            new_board.remove_mochigoma(self.turn, new_koma)
+            self.board[tx][ty] = new_koma
+            self.remove_mochigoma(self.turn, new_koma)
         else:
             fx, fy = move.from_pos
             tx, ty = move.to_pos
-            new_koma = new_board.board[fx][fy]
+            new_koma = self.board[fx][fy]
             if move.komadori is not None:
-                cap_koma = new_board.board[tx][ty]
+                cap_koma = move.komadori
+                histry["captured_nari"] = cap_koma.is_nari()
                 cap_koma.x = None
                 cap_koma.y = None
-                cap_koma.nari = False
+                cap_koma.unnari()
                 cap_koma.sente_gote = self.turn
-                new_board.add_mochigoma(self.turn, cap_koma)
+                self.add_mochigoma(self.turn, cap_koma)
             new_koma.x = tx
             new_koma.y = ty
-            new_board.board[fx][fy] = None
-            new_board.board[tx][ty] = new_koma
+            self.board[fx][fy] = None
+            self.board[tx][ty] = new_koma
             if move.nari:
                 new_koma.naru()
             if isinstance(new_koma, 王):
-                new_board.change_ou_position(self.turn, tx, ty)
-        new_board.change_turn()
-        new_board.move_count += 1
-        return new_board
+                self.change_ou_position(self.turn, tx, ty)
+        self.change_turn()
+        self.move_count += 1
+        return histry
     
     # 盤面を元に戻す
-    def ando_move(self, move):
-        return print("未定義")
+    def ando_move(self, histry):
+        self.change_turn()
+        self.move_count -= 1
+        move = histry["move"]
+        captured_nari = histry["captured_nari"]
+        if move.uchite:
+            tx, ty = move.to_pos
+            koma = self.board[tx][ty]
+            koma.x = None
+            koma.y = None
+            self.board[tx][ty] = None
+            self.add_mochigoma(self.turn, koma)
+        else:
+            fx, fy = move.from_pos
+            tx, ty = move.to_pos
+            koma = self.board[tx][ty]
+            koma.x = fx
+            koma.y = fy
+            self.board[fx][fy] = koma
+            self.board[tx][ty] = None
+            if move.komadori is not None:
+                cap_koma = move.komadori
+                if captured_nari:
+                    cap_koma.nari = True
+                if self.turn == "先手":
+                    enemy = "後手"
+                else:
+                    enemy = "先手"
+                cap_koma.sente_gote = enemy
+                cap_koma.x = tx
+                cap_koma.y = ty
+                self.board[tx][ty] = cap_koma
+                self.remove_mochigoma(self.turn, cap_koma)
+            if move.nari:
+                koma.unnari()
+            if isinstance(koma, 王):
+                self.change_ou_position(self.turn, fx, fy)
 
     # 将棋固有のルールを手に適応
     def filter_shogi_rules(self, board_moves, uchite, check_uchifuzume=True):
@@ -322,23 +338,26 @@ class 盤面:
         # 王手放置を除外
         legal_moves2 = []
         for move in legal_moves1:
-            next_board = self.apply_move(move)
-            if not next_board.is_oute(self.turn):
+            history = self.apply_move(move)
+            if self.turn == "先手":
+                enemy = "後手"
+            else:
+                enemy = "先手"
+            if not self.is_oute(enemy):
                 legal_moves2.append(move)
+            self.ando_move(history)
         
         # 打ち歩詰めを除外
         final_moves = []
         if check_uchifuzume:
             for move in legal_moves2:
-                next_board = self.apply_move(move)
+                history = self.apply_move(move)
                 if move.uchite and isinstance(move.koma, 歩):
-                    if self.turn == "先手":
-                        enemy = "後手"
-                    else:
-                        enemy = "先手"
-                    if next_board.is_checkmate(enemy):
+                    if self.is_checkmate(self.turn):
+                        self.ando_move(history)
                         continue
                 final_moves.append(move)
+                self.ando_move(history)
         else:
             final_moves=legal_moves2
         return final_moves

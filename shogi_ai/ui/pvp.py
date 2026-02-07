@@ -31,7 +31,7 @@ def pvp():
                 and legal_move.nari == in_move.nari
                 and legal_move.uchite == in_move.uchite
             ):
-                board = board.apply_move(legal_move)
+                history = board.apply_move(legal_move)
                 last_move = legal_move
                 break
         else:

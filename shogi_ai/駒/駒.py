@@ -18,19 +18,14 @@ class 駒:
     def naru(self):
         self.nari = True
     
+    def unnari(self):
+        self.nari = False
+    
     def is_nari(self):
         return self.nari
     
     def is_motigoma(self):
         return self.x is None and self.y is None
-    
-    def copy(self):
-        return type(self)(
-            self.sente_or_gote(),
-            self.x,
-            self.y,
-            self.nari
-        )
 
     def can_nari(self):
         raise NotImplementedError
