@@ -223,7 +223,7 @@ class 盤面:
                         )
         return moves
     
-    # 手を盤面に仮適用(王手・詰み・うち歩詰め判定用)
+    # 手を盤面に適用
     def apply_move(self, move):
         new_board = self.copy()
         if move.uchite:
@@ -261,6 +261,10 @@ class 盤面:
         new_board.change_turn()
         new_board.move_count += 1
         return new_board
+    
+    # 盤面を元に戻す
+    def ando_move(self, move):
+        return print("未定義")
 
     # 将棋固有のルールを手に適応
     def filter_shogi_rules(self, board_moves, uchite, check_uchifuzume=True):
