@@ -266,6 +266,7 @@ class 盤面:
             self.board[tx][ty] = None
             if move.komadori is not None:
                 cap_koma = move.komadori
+                self.remove_mochigoma(self.turn, cap_koma)
                 if captured_nari:
                     cap_koma.nari = True
                 if self.turn == "先手":
@@ -276,7 +277,6 @@ class 盤面:
                 cap_koma.x = tx
                 cap_koma.y = ty
                 self.board[tx][ty] = cap_koma
-                self.remove_mochigoma(self.turn, cap_koma)
             if move.nari:
                 koma.unnari()
             if isinstance(koma, 王):
