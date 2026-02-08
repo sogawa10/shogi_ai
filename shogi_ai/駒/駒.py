@@ -18,7 +18,7 @@ class 駒:
     def naru(self):
         self.nari = True
     
-    def unnari(self):
+    def unaru(self):
         self.nari = False
     
     def is_nari(self):

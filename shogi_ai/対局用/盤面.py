@@ -228,7 +228,7 @@ class 盤面:
                 histry["captured_nari"] = cap_koma.is_nari()
                 cap_koma.x = None
                 cap_koma.y = None
-                cap_koma.unnari()
+                cap_koma.unaru()
                 cap_koma.sente_gote = self.turn
                 self.add_mochigoma(self.turn, cap_koma)
             new_koma.x = tx
@@ -268,7 +268,7 @@ class 盤面:
                 cap_koma = move.komadori
                 self.remove_mochigoma(self.turn, cap_koma)
                 if captured_nari:
-                    cap_koma.nari = True
+                    cap_koma.naru()
                 if self.turn == "先手":
                     enemy = "後手"
                 else:
@@ -278,7 +278,7 @@ class 盤面:
                 cap_koma.y = ty
                 self.board[tx][ty] = cap_koma
             if move.nari:
-                koma.unnari()
+                koma.unaru()
             if isinstance(koma, 王):
                 self.change_ou_position(self.turn, fx, fy)
 
@@ -288,7 +288,7 @@ class 盤面:
         board_legal_moves = []
         for move in board_moves:
             board_legal_moves.append(move)
-            if move.koma.can_nari():
+            if move.koma.can_nari() and not move.koma.is_nari():
                 if self.turn == "先手":
                     if 0 <= move.from_pos[1] <=2 or 0 <= move.to_pos[1] <=2:
                         board_legal_moves.append(replace(move, nari=True))

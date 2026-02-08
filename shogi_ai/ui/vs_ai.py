@@ -44,7 +44,7 @@ def vs_ai():
             print_mochigoma(board)
             print()
             print("AI思考中...")
-            ai_move = ai_think(board, depth=3)
+            ai_move = ai_think(board, depth=4)
             history = board.apply_move(ai_move)
             last_move = ai_move
         # 終了判定
