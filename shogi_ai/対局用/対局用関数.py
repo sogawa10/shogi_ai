@@ -98,7 +98,6 @@ def input_move(board, player_sente_or_gote = "先手"):
             else:
                 tx, ty = map(int, input_move[1:])
                 tx, ty = 10 - tx, 10 - ty
-            tx, ty = map(int, input_move[1:])
         except ValueError:
             return None
         tx, ty = tx - 1, ty - 1
