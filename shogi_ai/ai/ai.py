@@ -2,52 +2,18 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import random
 from shogi_ai.ai.ai用関数 import *
 
-# 初手の定石
-def opening_move(board):
-    joseki_moves = []
-    board_moves = board.generate_board_moves(board.turn)
-    uchite = board.generate_uchite(board.turn)
-    legal_moves = board.filter_shogi_rules(board_moves, uchite)
-    if board.move_count <= 2:
-        if board.turn == "先手":
-            joseki = [
-                ((6, 6), (6, 5)),
-                ((1, 6), (1, 5))
-            ]
-        else:
-            joseki = [
-                ((2, 2), (2, 3)),
-                ((7, 2), (7, 3))
-            ]
-    elif board.move_count <= 4:
-        if board.turn == "先手":
-            joseki = [
-                ((6, 6), (6, 5)),
-                ((5, 6), (5, 5)),
-                ((1, 6), (1, 5)),
-                ((1, 5), (1, 4))
-            ]
-        else:
-            joseki = [
-                ((2, 2), (2, 3)),
-                ((3, 2), (3, 3)),
-                ((7, 2), (7, 3)),
-                ((7, 3), (7, 4))
-            ]
-    for move in legal_moves:
-        if (move.from_pos, move.to_pos) in joseki:
-            joseki_moves.append(move)
-    if joseki_moves:
-        return random.choice(joseki_moves)
-    return None
-
-def evaluate(board, move, depth):
+def evaluate(board, move, position_history, depth):
     history = board.apply_move(move)
-    score = -1 * tree_search(board, depth-1, float('-inf'), float('inf'))
+    key = position_key(board)
+    position_history[key] = position_history.get(key, 0) + 1
+    score = -1 * tree_search(board, position_history, depth-1, float('-inf'), float('inf'))
+    position_history[key] -= 1
+    if position_history[key] == 0:
+        del position_history[key]
     board.ando_move(history)
     return score, move
 
-def ai_think(board, depth):
+def ai_think(board, position_history, depth):
     if board.move_count <= 4:
         move = opening_move(board)
         if move is not None:
@@ -61,7 +27,7 @@ def ai_think(board, depth):
     random.shuffle(legal_moves)
     with ProcessPoolExecutor() as executor:
         futures = [
-            executor.submit(evaluate, board, move, depth)
+            executor.submit(evaluate, board, move, position_history, depth)
             for move in legal_moves
         ]
         for future in as_completed(futures):

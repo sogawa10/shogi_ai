@@ -83,10 +83,7 @@ class 盤面:
         self.mochigoma[turn].append(koma)
     
     def remove_mochigoma(self, turn, koma):
-        for k in self.mochigoma[turn]:
-            if type(k) == type(koma):
-                self.mochigoma[turn].remove(k)
-                break
+        self.mochigoma[turn].remove(koma)
 
     def is_on_board(self, x, y):
         return 0 <= x < 9 and 0 <= y < 9
@@ -214,7 +211,11 @@ class 盤面:
         }
         if move.uchite:
             tx, ty = move.to_pos
-            new_koma = move.koma
+            new_koma = None
+            for koma in self.mochigoma[self.turn]:
+                if type(koma) is type(move.koma):
+                    new_koma = koma
+                    break
             new_koma.x = tx
             new_koma.y = ty
             self.board[tx][ty] = new_koma
