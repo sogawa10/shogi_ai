@@ -31,15 +31,27 @@ class 桂(駒):
     def is_continuous(self, dx, dy):
         return False
     
-    def symbol(self):
-        if self.sente_gote == "先手":
-            if self.nari:
-                symbol = "↑金"
+    def symbol(self, player_sente_or_gote = "先手"):
+        if player_sente_or_gote == "先手":
+            if self.sente_gote == "先手":
+                if self.nari:
+                    symbol = "↑金"
+                else:
+                    symbol = "↑桂"
             else:
-                symbol = "↑桂"
+                if self.nari:
+                    symbol = "↓金"
+                else:
+                    symbol = "↓桂"
         else:
-            if self.nari:
-                symbol = "↓金"
+            if self.sente_gote == "先手":
+                if self.nari:
+                    symbol = "↓金"
+                else:
+                    symbol = "↓桂"
             else:
-                symbol = "↓桂"
+                if self.nari:
+                    symbol = "↑金"
+                else:
+                    symbol = "↑桂"
         return symbol

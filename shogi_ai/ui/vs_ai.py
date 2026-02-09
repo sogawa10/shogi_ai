@@ -1,3 +1,5 @@
+import random
+import time
 from shogi_ai.対局用.盤面 import 盤面
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
@@ -5,18 +7,27 @@ from shogi_ai.対局用.対局用関数 import *
 from shogi_ai.ai.ai import ai_think
 
 def vs_ai():
+    depth = 4  # AIの思考深さ
+    player_sente_or_gote = random.choice(["先手", "後手"])
+    print()
+    print("☆ あなたは「" + player_sente_or_gote + "」です ☆")
+    if player_sente_or_gote == "先手":
+        remainder = 1
+    else:
+        remainder = 0
     board = 盤面()
     last_move = None
     position_history = {}
     position_sequence = []
     position_history[position_key(board)] = 1
     position_sequence.append((position_key(board), None))
+    time.sleep(3)
     while True:
-        if board.get_move_count() % 2 == 1:
+        if board.get_move_count() % 2 == remainder:
             # 盤面と持ち駒を表示し，手の入力を受け付ける
-            print_board(board, last_move)
-            print_mochigoma(board)
-            in_move = input_move(board)
+            print_board(board, last_move, player_sente_or_gote)
+            print_mochigoma(board, player_sente_or_gote)
+            in_move = input_move(board, player_sente_or_gote)
             if in_move is None:
                 print("☆ 入力エラーです 正しく入力してください ☆")
                 continue
@@ -40,11 +51,12 @@ def vs_ai():
                 print("☆ 非合法手です ☆")
                 continue
         else:
-            print_board(board, last_move)
-            print_mochigoma(board)
+            # 盤面と持ち駒を表示し，AIの思考を開始する
+            print_board(board, last_move, player_sente_or_gote)
+            print_mochigoma(board, player_sente_or_gote)
             print()
             print("AI思考中...")
-            ai_move = ai_think(board, position_history, depth=4)
+            ai_move = ai_think(board, position_history, depth, player_sente_or_gote)
             history = board.apply_move(ai_move)
             last_move = ai_move
         # 終了判定
@@ -53,7 +65,8 @@ def vs_ai():
                 enemy = "後手"
             else:
                 enemy = "先手"
-            print_board(board, last_move)
+            print_board(board, last_move, player_sente_or_gote)
+            print_mochigoma(board, player_sente_or_gote)
             print("「" + enemy + "」の勝利!!")
             print()
             break
@@ -66,7 +79,8 @@ def vs_ai():
                     point = 27
                 score, in_count = count_nyugyoku_points(board)
                 if in_count >= 10 and score >= point:
-                    print_board(board, last_move)
+                    print_board(board, last_move, player_sente_or_gote)
+                    print_mochigoma(board, player_sente_or_gote)
                     print("入玉宣言法により...")
                     print("「" + board.turn + "」の勝利!!")
                     print()
@@ -84,7 +98,8 @@ def vs_ai():
         position_history[key] = position_history.get(key, 0) + 1
         position_sequence.append((key, enemy))
         if position_history[key] == 4:
-            print_board(board, last_move)
+            print_board(board, last_move, player_sente_or_gote)
+            print_mochigoma(board, player_sente_or_gote)
             first = 0
             for i, (past_key, _) in enumerate(position_sequence):
                 if past_key == key:
@@ -118,7 +133,8 @@ def vs_ai():
                 break
         # 最大手数判定
         if board.get_move_count() - 1 >= 500:
-            print_board(board, last_move)
+            print_board(board, last_move, player_sente_or_gote)
+            print_mochigoma(board, player_sente_or_gote)
             print("最大手数に達しました")
             print("引き分けです")
             print()

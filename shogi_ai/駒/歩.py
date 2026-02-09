@@ -31,15 +31,27 @@ class 歩(駒):
     def is_continuous(self, dx, dy):
         return False
 
-    def symbol(self):
-        if self.sente_gote == "先手":
-            if self.nari:
-                symbol = "↑と"
+    def symbol(self, player_sente_or_gote = "先手"):
+        if player_sente_or_gote == "先手":
+            if self.sente_gote == "先手":
+                if self.nari:
+                    symbol = "↑と"
+                else:
+                    symbol = "↑歩"
             else:
-                symbol = "↑歩"
+                if self.nari:
+                    symbol = "↓と"
+                else:
+                    symbol = "↓歩"
         else:
-            if self.nari:
-                symbol = "↓と"
+            if self.sente_gote == "先手":
+                if self.nari:
+                    symbol = "↓と"
+                else:
+                    symbol = "↓歩"
             else:
-                symbol = "↓歩"
+                if self.nari:
+                    symbol = "↑と"
+                else:
+                    symbol = "↑歩"
         return symbol

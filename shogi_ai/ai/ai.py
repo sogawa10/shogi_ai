@@ -13,7 +13,7 @@ def evaluate(board, move, position_history, depth):
     board.ando_move(history)
     return score, move
 
-def ai_think(board, position_history, depth):
+def ai_think(board, position_history, depth, player_sente_or_gote):
     if board.move_count <= 4:
         move = opening_move(board)
         if move is not None:
@@ -35,6 +35,6 @@ def ai_think(board, position_history, depth):
             if score > best_score:
                 best_score = score
                 best_move = move
-                print(f"\r\033[K現在の最善手: {best_move.to_string()}  評価値: {best_score}", end="")
-    print("\r\033[K最終結果: " + best_move.to_string() + "  評価値: " + str(best_score))
+                print(f"\r\033[K現在の最善手: {best_move.to_string(player_sente_or_gote)}  評価値: {best_score}", end="")
+    print("\r\033[K最終結果: " + best_move.to_string(player_sente_or_gote) + "  評価値: " + str(best_score))
     return best_move

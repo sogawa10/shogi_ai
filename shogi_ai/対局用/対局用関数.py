@@ -2,40 +2,60 @@ from shogi_ai.対局用.盤面 import 盤面
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
 
-def print_board(board, last_move):
+def print_board(board, last_move, player_sente_or_gote = "先手"):
     int2kanji_map = {
         0: '一', 1: '二', 2: '三', 3: '四', 4: '五', 5: '六', 6: '七', 7: '八', 8: '九'
     }
-    print()
-    print("———————————————————————————————————————————————————————————————————————")
-    print()
-    if last_move is not None:
-        print("直前の手：", last_move.to_string())
+    if player_sente_or_gote == "先手":
         print()
-    print(" ９　 ８　 ７　 ６　 ５　 ４　 ３　 ２　 １　")
-    print()
-    for y in range(9):
-        for x in range(8, -1, -1):
-            if board.board[x][y] == None:
-                print(" ・", end='　')
-            else:
-                print(board.board[x][y].symbol(), end='　')
-        print(" ", end='')
-        print(int2kanji_map[y])
+        print("———————————————————————————————————————————————————————————————————————")
         print()
-    print()
+        if last_move is not None:
+            print("直前の手：", last_move.to_string(player_sente_or_gote))
+            print()
+        print(" ９　 ８　 ７　 ６　 ５　 ４　 ３　 ２　 １　")
+        print()
+        for y in range(9):
+            for x in range(8, -1, -1):
+                if board.board[x][y] == None:
+                    print(" ・", end='　')
+                else:
+                    print(board.board[x][y].symbol(player_sente_or_gote), end='　')
+            print(" ", end='')
+            print(int2kanji_map[y])
+            print()
+        print()
+    else:
+        print()
+        print("———————————————————————————————————————————————————————————————————————")
+        print()
+        if last_move is not None:
+            print("直前の手：", last_move.to_string(player_sente_or_gote))
+            print()
+        print(" ９　 ８　 ７　 ６　 ５　 ４　 ３　 ２　 １　")
+        print()
+        for y in range(8, -1, -1):
+            for x in range(9):
+                if board.board[x][y] == None:
+                    print(" ・", end='　')
+                else:
+                    print(board.board[x][y].symbol(player_sente_or_gote), end='　')
+            print(" ", end='')
+            print(int2kanji_map[8 - y])
+            print()
+        print()
 
-def print_mochigoma(board):
+def print_mochigoma(board, player_sente_or_gote = "先手"):
     print("先手 持駒：", end='')
     for koma in board.mochigoma["先手"]:
-        print(koma.symbol(), end='　')
+        print(koma.symbol(player_sente_or_gote), end='　')
     print()
     print("後手 持駒：", end='')
     for koma in board.mochigoma["後手"]:
-        print(koma.symbol(), end='　')
+        print(koma.symbol(player_sente_or_gote), end='　')
     print()
 
-def input_move(board):
+def input_move(board, player_sente_or_gote = "先手"):
     print()
     print("☆ 入力例 ☆")
     print("移動：fx fy tx ty [成]")
@@ -46,7 +66,11 @@ def input_move(board):
     # 移動
     if  len(input_move) in (4, 5):
         try:
-            fx, fy, tx, ty = map(int, input_move[:4])
+            if player_sente_or_gote == "先手":
+                fx, fy, tx, ty = map(int, input_move[:4])
+            else:
+                fx, fy, tx, ty = map(int, input_move[:4])
+                fx, fy, tx, ty = 10 - fx, 10 - fy, 10 - tx, 10 - ty
         except ValueError:
             return None
         fx, fy, tx, ty = fx - 1, fy - 1, tx - 1, ty - 1
@@ -69,6 +93,11 @@ def input_move(board):
             "歩":歩, "角":角, "飛":飛, "金":金, "銀":銀, "桂":桂, "香":香
         }
         try:
+            if player_sente_or_gote == "先手":
+                tx, ty = map(int, input_move[1:])
+            else:
+                tx, ty = map(int, input_move[1:])
+                tx, ty = 10 - tx, 10 - ty
             tx, ty = map(int, input_move[1:])
         except ValueError:
             return None

@@ -14,9 +14,15 @@ class 王(駒):
     def is_continuous(self, dx, dy):
         return False
     
-    def symbol(self):
-        if self.sente_gote == "先手":
-            symbol = "↑王"
+    def symbol(self, player_sente_or_gote = "先手"):
+        if player_sente_or_gote == "先手":
+            if self.sente_gote == "先手":
+                symbol = "↑王"
+            else:
+                symbol = "↓玉"
         else:
-            symbol = "↓玉"
+            if self.sente_gote == "先手":
+                symbol = "↓王"
+            else:
+                symbol = "↑玉"
         return symbol
