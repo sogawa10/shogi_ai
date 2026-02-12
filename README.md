@@ -17,7 +17,7 @@
 
 ## システムの全体像
 
-<img width="4401" height="2486" alt="Image" src="https://github.com/user-attachments/assets/6338bbfc-62b4-4113-b2f9-d026857fedb6" />
+![Image](https://github.com/user-attachments/assets/b0b5cac1-f352-4168-a9b6-1fdeaf0c2c18)
 
 ## APIの仕様
 
