@@ -1,5 +1,6 @@
 import random
 import time
+from copy import deepcopy
 from shogi_ai.対局用.盤面 import 盤面
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
@@ -27,7 +28,7 @@ def vs_ai():
             # 盤面と持ち駒を表示し，手の入力を受け付ける
             print_board(board, last_move, player_sente_or_gote)
             print_mochigoma(board, player_sente_or_gote)
-            in_move = input_move(board, player_sente_or_gote)
+            in_move = input_move(board)
             if in_move is None:
                 print("☆ 入力エラーです 正しく入力してください ☆")
                 continue
@@ -44,8 +45,8 @@ def vs_ai():
                     and legal_move.nari == in_move.nari
                     and legal_move.uchite == in_move.uchite
                 ):
+                    last_move = deepcopy(legal_move)
                     history = board.apply_move(legal_move)
-                    last_move = legal_move
                     break
             else:
                 print("☆ 非合法手です ☆")
@@ -57,8 +58,8 @@ def vs_ai():
             print()
             print("AI思考中...")
             ai_move = ai_think(board, position_history, depth, player_sente_or_gote)
+            last_move = deepcopy(ai_move)
             history = board.apply_move(ai_move)
-            last_move = ai_move
         # 終了判定
         if board.is_checkmate(board.turn):
             if board.turn == "先手":

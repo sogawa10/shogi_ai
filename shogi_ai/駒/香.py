@@ -41,23 +41,23 @@ class 香(駒):
         if player_sente_or_gote == "先手":
             if self.sente_gote == "先手":
                 if self.nari:
-                    symbol = "↑金"
+                    symbol = "↑杏"
                 else:
                     symbol = "↑香"
             else:
                 if self.nari:
-                    symbol = "↓金"
+                    symbol = "↓杏"
                 else:
                     symbol = "↓香"
         else:
             if self.sente_gote == "先手":
                 if self.nari:
-                    symbol = "↓金"
+                    symbol = "↓杏"
                 else:
                     symbol = "↓香"
             else:
                 if self.nari:
-                    symbol = "↑金"
+                    symbol = "↑杏"
                 else:
                     symbol = "↑香"   
         return symbol

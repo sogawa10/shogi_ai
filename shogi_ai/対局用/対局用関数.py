@@ -32,7 +32,7 @@ def print_board(board, last_move, player_sente_or_gote = "先手"):
         if last_move is not None:
             print("直前の手：", last_move.to_string(player_sente_or_gote))
             print()
-        print(" ９　 ８　 ７　 ６　 ５　 ４　 ３　 ２　 １　")
+        print(" １　 ２　 ３　 ４　 ５　 ６　 ７　 ８　 ９　")
         print()
         for y in range(8, -1, -1):
             for x in range(9):
@@ -41,7 +41,7 @@ def print_board(board, last_move, player_sente_or_gote = "先手"):
                 else:
                     print(board.board[x][y].symbol(player_sente_or_gote), end='　')
             print(" ", end='')
-            print(int2kanji_map[8 - y])
+            print(int2kanji_map[y])
             print()
         print()
 
@@ -55,22 +55,18 @@ def print_mochigoma(board, player_sente_or_gote = "先手"):
         print(koma.symbol(player_sente_or_gote), end='　')
     print()
 
-def input_move(board, player_sente_or_gote = "先手"):
+def input_move(board):
     print()
     print("☆ 入力例 ☆")
     print("移動：fx fy tx ty [成]")
     print("打つ：駒 tx ty")
     print()
-    input_move = input(board.turn + "の手番> ").strip().split()
+    input_move = input(board.turn + "の手番> ").strip()
 
     # 移動
     if  len(input_move) in (4, 5):
         try:
-            if player_sente_or_gote == "先手":
-                fx, fy, tx, ty = map(int, input_move[:4])
-            else:
-                fx, fy, tx, ty = map(int, input_move[:4])
-                fx, fy, tx, ty = 10 - fx, 10 - fy, 10 - tx, 10 - ty
+            fx, fy, tx, ty = map(int, input_move[:4])
         except ValueError:
             return None
         fx, fy, tx, ty = fx - 1, fy - 1, tx - 1, ty - 1
@@ -93,11 +89,7 @@ def input_move(board, player_sente_or_gote = "先手"):
             "歩":歩, "角":角, "飛":飛, "金":金, "銀":銀, "桂":桂, "香":香
         }
         try:
-            if player_sente_or_gote == "先手":
-                tx, ty = map(int, input_move[1:])
-            else:
-                tx, ty = map(int, input_move[1:])
-                tx, ty = 10 - tx, 10 - ty
+            tx, ty = map(int, input_move[1:])
         except ValueError:
             return None
         tx, ty = tx - 1, ty - 1

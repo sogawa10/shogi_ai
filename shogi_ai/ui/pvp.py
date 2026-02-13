@@ -1,3 +1,4 @@
+from copy import deepcopy
 from shogi_ai.対局用.盤面 import 盤面
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
@@ -31,8 +32,8 @@ def pvp():
                 and legal_move.nari == in_move.nari
                 and legal_move.uchite == in_move.uchite
             ):
+                last_move = deepcopy(legal_move)
                 history = board.apply_move(legal_move)
-                last_move = legal_move
                 break
         else:
             print("☆ 非合法手です ☆")

@@ -39,23 +39,23 @@ class 銀(駒):
         if player_sente_or_gote == "先手":
             if self.sente_gote == "先手":
                 if self.nari:
-                    symbol = "↑金"
+                    symbol = "↑全"
                 else:
                     symbol = "↑銀"
             else:
                 if self.nari:
-                    symbol = "↓金"
+                    symbol = "↓全"
                 else:
                     symbol = "↓銀"
         else:
             if self.sente_gote == "先手":
                 if self.nari:
-                    symbol = "↓金"
+                    symbol = "↓全"
                 else:
                     symbol = "↓銀"
             else:
                 if self.nari:
-                    symbol = "↑金"
+                    symbol = "↑全"
                 else:
                     symbol = "↑銀"
         return symbol
