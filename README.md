@@ -17,7 +17,7 @@
 
 ## システムの全体像
 
-![Image](https://github.com/user-attachments/assets/b0b5cac1-f352-4168-a9b6-1fdeaf0c2c18)
+![Image](https://github.com/user-attachments/assets/6f1ec107-2347-49db-ae23-745df532a6e7)
 
 ## APIの仕様
 
