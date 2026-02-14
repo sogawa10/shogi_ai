@@ -47,9 +47,9 @@ def evaluate(board):
         王: {"王": 15000, "玉": 15000},
         歩: {"歩": 100, "と": 700},
         金: {"金": 690},
-        銀: {"銀": 640, "金": 670},
-        桂: {"桂": 450, "金": 630},
-        香: {"香": 430, "金": 630},
+        銀: {"銀": 640, "全": 670},
+        桂: {"桂": 450, "圭": 630},
+        香: {"香": 430, "杏": 630},
         飛: {"飛": 990, "龍": 1300},
         角: {"角": 890, "馬": 1150},
     }
@@ -103,16 +103,17 @@ def evaluate(board):
 def tree_search(board, position_history, depth, alpha, beta):
     # リーフ
     if board.is_checkmate(board.turn):
-        return -100000 + depth
+        return -100000 + depth, 1
     if position_history[position_key(board)] == 4:
-        return -100000 + depth
+        return -100000 + depth, 1
     if depth == 0:
-        return evaluate(board)
+        return evaluate(board), 1
     # ノード
     captur_moves = []
     nari_moves = []
     other_moves = []
     best_score = float('-inf')
+    total_nodes = 1
     board_moves = board.generate_board_moves(board.turn)
     uchite = board.generate_uchite(board.turn)
     legal_moves = board.filter_shogi_rules(board_moves, uchite)
@@ -128,7 +129,9 @@ def tree_search(board, position_history, depth, alpha, beta):
         history = board.apply_move(move)
         key = position_key(board)
         position_history[key] = position_history.get(key, 0) + 1
-        score = -1 * tree_search(board, position_history, depth-1, -1*beta, -1*alpha)
+        score, node_count = tree_search(board, position_history, depth-1, -1*beta, -1*alpha)
+        score = -score
+        total_nodes += node_count
         board.ando_move(history)
         position_history[key] -= 1
         if position_history[key] == 0:
@@ -137,4 +140,4 @@ def tree_search(board, position_history, depth, alpha, beta):
         alpha = max(alpha, best_score)
         if alpha >= beta:
             break
-    return best_score
+    return best_score, total_nodes

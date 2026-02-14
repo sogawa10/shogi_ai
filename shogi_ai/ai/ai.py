@@ -6,12 +6,13 @@ def evaluate(board, move, position_history, depth):
     history = board.apply_move(move)
     key = position_key(board)
     position_history[key] = position_history.get(key, 0) + 1
-    score = -1 * tree_search(board, position_history, depth-1, float('-inf'), float('inf'))
+    score, node_count = tree_search(board, position_history, depth-1, float('-inf'), float('inf'))
+    score = -score
     position_history[key] -= 1
     if position_history[key] == 0:
         del position_history[key]
     board.ando_move(history)
-    return score, move
+    return score, move, node_count
 
 def ai_think(board, position_history, depth, player_sente_or_gote):
     if board.move_count <= 4:
@@ -21,6 +22,7 @@ def ai_think(board, position_history, depth, player_sente_or_gote):
             return move
     best_move = None
     best_score = float('-inf')
+    total_nodes = 0
     board_moves = board.generate_board_moves(board.turn)
     uchite = board.generate_uchite(board.turn)
     legal_moves = board.filter_shogi_rules(board_moves, uchite)
@@ -31,10 +33,11 @@ def ai_think(board, position_history, depth, player_sente_or_gote):
             for move in legal_moves
         ]
         for future in as_completed(futures):
-            score, move = future.result()
+            score, move, node_count = future.result()
             if score > best_score:
                 best_score = score
                 best_move = move
-                print(f"\r\033[K現在の最善手: {best_move.to_string(player_sente_or_gote)}  評価値: {best_score}", end="")
-    print("\r\033[K最終結果: " + best_move.to_string(player_sente_or_gote) + "  評価値: " + str(best_score))
+            total_nodes += node_count
+            print("\r\033[K最終結果: " + best_move.to_string(player_sente_or_gote) + "  評価値: " + str(best_score) + "  ノード数: " + str(total_nodes), end="")
+    print("\r\033[K最終結果: " + best_move.to_string(player_sente_or_gote) + "  評価値: " + str(best_score) + "  ノード数: " + str(total_nodes))
     return best_move

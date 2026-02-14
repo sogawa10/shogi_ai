@@ -8,7 +8,7 @@ from shogi_ai.対局用.対局用関数 import *
 from shogi_ai.ai.ai import ai_think
 
 def vs_ai():
-    depth = 4  # AIの思考深さ
+    depth = 5  # AIの思考深さ
     player_sente_or_gote = random.choice(["先手", "後手"])
     print()
     print("☆ あなたは「" + player_sente_or_gote + "」です ☆")
