@@ -5,12 +5,10 @@ from shogi_ai.対局用.手 import 手
 from shogi_ai.対局用.対局用関数 import *
 
 def pvp():
-    board = 盤面()
     last_move = None
-    position_history = {}
-    position_sequence = []
-    position_history[position_key(board)] = 1
-    position_sequence.append((position_key(board), None))
+    board = 盤面()
+    # 復元する場合は棋譜を入力
+    position_history, position_sequence = board.load_kifu("")
     while True:
         # 盤面と持ち駒を表示し，手の入力を受け付ける
         print_board(board, last_move)

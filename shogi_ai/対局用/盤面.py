@@ -1,6 +1,7 @@
 from dataclasses import replace
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
+from shogi_ai.対局用.対局用関数 import position_key
 
 class 盤面:
     def __init__(self):
@@ -153,8 +154,84 @@ class 盤面:
 
     # 棋譜を読み込んで盤面を構築
     def load_kifu(self, kifu):
-        for move in kifu:
-            self.apply_move(move)
+        position_history = {}
+        position_sequence = []
+        position_history[position_key(self)] = 1
+        position_sequence.append((position_key(self), None))
+        moves = kifu.strip().split()
+        for move in moves:
+            if move[0] == "▲":
+                move_turn = "先手"
+            elif move[0] == "△":
+                move_turn = "後手"
+            else:
+                raise ValueError("棋譜の手番が不正です")
+            if self.turn != move_turn:
+                raise ValueError("棋譜の手番が不正です")
+            # 移動(成らず)
+            if len(move) == 8 and move[4] == "(" and move[7] == ")":
+                try:
+                    tx, ty, fx, fy = int(move[1]) - 1, int(move[2]) - 1, int(move[5]) - 1, int(move[6]) - 1
+                except ValueError:
+                    raise ValueError("棋譜の手が不正です")
+                if not (0 <= tx < 9 and 0 <= ty < 9 and 0 <= fx < 9 and 0 <= fy < 9):
+                    raise ValueError("棋譜の手が不正です")
+                koma = self.board[fx][fy]
+                if koma is None or move[3] != koma.symbol(move_turn)[1]:
+                    raise ValueError("棋譜の手が不正です")
+                cap_koma = self.board[tx][ty]
+                if cap_koma is not None and cap_koma.sente_or_gote() == move_turn:
+                    raise ValueError("棋譜の手が不正です")
+                now_move = 手(koma, (fx, fy), (tx, ty), komadori=cap_koma)
+            # 移動(成り)
+            elif len(move) == 9 and move[4] == "成" and move[5] == "(" and move[8] == ")":
+                try:
+                    tx, ty, fx, fy = int(move[1]) - 1, int(move[2]) - 1, int(move[6]) - 1, int(move[7]) - 1
+                except ValueError:
+                    raise ValueError("棋譜の手が不正です")
+                if not (0 <= tx < 9 and 0 <= ty < 9 and 0 <= fx < 9 and 0 <= fy < 9):
+                    raise ValueError("棋譜の手が不正です")
+                koma = self.board[fx][fy]
+                if koma is None or move[3] != koma.symbol(move_turn)[1]:
+                    raise ValueError("棋譜の手が不正です")
+                cap_koma = self.board[tx][ty]
+                if cap_koma is not None and cap_koma.sente_or_gote() == move_turn:
+                    raise ValueError("棋譜の手が不正です")
+                now_move = 手(koma, (fx, fy), (tx, ty), nari=True, komadori=cap_koma)
+            # 打ち
+            elif len(move) == 5 and move[3] in {"歩","角","飛","金","銀","桂","香"} and move[4] == "打":
+                kanji2class = {
+                    "歩":歩, "角":角, "飛":飛, "金":金, "銀":銀, "桂":桂, "香":香
+                }
+                try:
+                    tx, ty = int(move[1]) - 1, int(move[2]) - 1
+                except ValueError:
+                    raise ValueError("棋譜の手が不正です")
+                if not (0 <= tx < 9 and 0 <= ty < 9):
+                    raise ValueError("棋譜の手が不正です")
+                found = False
+                for koma in self.mochigoma[self.turn]:
+                    if type(koma) is kanji2class[move[3]]:
+                        found = True
+                        now_move = 手(koma, None, (tx, ty), uchite=True)
+                        break
+                if not found:
+                    raise ValueError("棋譜の手が不正です")
+            else:
+                raise ValueError("棋譜の手が不正です")
+            self.apply_move(now_move)
+            key = position_key(self)
+            is_oute = self.is_oute(self.turn)
+            if is_oute:
+                if self.turn == "先手":
+                    enemy = "後手"
+                else:
+                    enemy = "先手"
+            else:
+                enemy = None
+            position_history[key] = position_history.get(key, 0) + 1
+            position_sequence.append((key, enemy))
+        return position_history, position_sequence
     
     # 盤面の手のリストを返す
     def generate_board_moves(self, turn):

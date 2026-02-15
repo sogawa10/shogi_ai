@@ -16,12 +16,10 @@ def vs_ai():
         remainder = 1
     else:
         remainder = 0
-    board = 盤面()
     last_move = None
-    position_history = {}
-    position_sequence = []
-    position_history[position_key(board)] = 1
-    position_sequence.append((position_key(board), None))
+    board = 盤面()
+    # 復元する場合は棋譜を入力
+    position_history, position_sequence = board.load_kifu("")
     time.sleep(3)
     while True:
         if board.get_move_count() % 2 == remainder:

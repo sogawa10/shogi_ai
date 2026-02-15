@@ -1,4 +1,3 @@
-from shogi_ai.対局用.盤面 import 盤面
 from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
 
