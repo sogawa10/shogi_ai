@@ -8,7 +8,7 @@ from shogi_ai.対局用.対局用関数 import *
 from shogi_ai.ai.ai import ai_think
 
 def vs_ai():
-    depth = 5  # AIの思考深さ
+    depth = 4  # AIの思考深さ
     player_sente_or_gote = random.choice(["先手", "後手"])
     print()
     print("☆ あなたは「" + player_sente_or_gote + "」です ☆")
@@ -57,7 +57,7 @@ def vs_ai():
             print_mochigoma(board, player_sente_or_gote)
             print()
             print("AI思考中...")
-            ai_move = ai_think(board, position_history, depth, player_sente_or_gote)
+            ai_move = ai_think(board, depth, player_sente_or_gote)
             last_move = deepcopy(ai_move)
             history = board.apply_move(ai_move)
         # 終了判定

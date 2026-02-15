@@ -2,9 +2,6 @@ import random
 from shogi_ai.駒 import *
 from shogi_ai.対局用.対局用関数 import *
 
-# 盤面ハッシュ
-board_hashes = {}
-
 # 初手の定石
 def opening_move(board):
     joseki_moves = []
@@ -103,22 +100,12 @@ def evaluate(board):
     return score
 
 # 木探索
-def tree_search(board, position_history, depth, alpha, beta):
-    # 盤面ハッシュによる軽量化
-    root_key = position_key(board)
-    if root_key in board_hashes and board_hashes[root_key][0] >= depth:
-        return board_hashes[root_key][1], 1
+def tree_search(board, depth, alpha, beta):
     # リーフ
     if board.is_checkmate(board.turn):
-        board_hashes[root_key] = (depth, -100000 + depth)
-        return -100000 + depth, 1
-    if position_history[root_key] == 4:
-        board_hashes[root_key] = (depth, -100000 + depth)
         return -100000 + depth, 1
     if depth == 0:
-        score = evaluate(board)
-        board_hashes[root_key] = (depth, score)
-        return score, 1
+        return evaluate(board), 1
     # ノード
     captur_moves = []
     nari_moves = []
@@ -139,17 +126,12 @@ def tree_search(board, position_history, depth, alpha, beta):
     for move in legal_moves:
         history = board.apply_move(move)
         key = position_key(board)
-        position_history[key] = position_history.get(key, 0) + 1
-        score, node_count = tree_search(board, position_history, depth-1, -1*beta, -1*alpha)
+        score, node_count = tree_search(board, depth-1, -1*beta, -1*alpha)
         score = -score
         total_nodes += node_count
         board.ando_move(history)
-        position_history[key] -= 1
-        if position_history[key] == 0:
-            del position_history[key]
         best_score = max(best_score, score)
         alpha = max(alpha, best_score)
         if alpha >= beta:
             break
-    board_hashes[root_key] = (depth, best_score)
     return best_score, total_nodes

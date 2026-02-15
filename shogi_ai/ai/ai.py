@@ -2,19 +2,15 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import random
 from shogi_ai.ai.ai用関数 import *
 
-def evaluate(board, move, position_history, depth):
+def evaluate(board, move, depth):
     history = board.apply_move(move)
     key = position_key(board)
-    position_history[key] = position_history.get(key, 0) + 1
-    score, node_count = tree_search(board, position_history, depth-1, float('-inf'), float('inf'))
+    score, node_count = tree_search(board, depth-1, float('-inf'), float('inf'))
     score = -score
-    position_history[key] -= 1
-    if position_history[key] == 0:
-        del position_history[key]
     board.ando_move(history)
     return score, move, node_count
 
-def ai_think(board, position_history, depth, player_sente_or_gote):
+def ai_think(board, depth, player_sente_or_gote):
     if board.move_count <= 4:
         move = opening_move(board)
         if move is not None:
@@ -29,7 +25,7 @@ def ai_think(board, position_history, depth, player_sente_or_gote):
     random.shuffle(legal_moves)
     with ProcessPoolExecutor() as executor:
         futures = [
-            executor.submit(evaluate, board, move, position_history, depth)
+            executor.submit(evaluate, board, move, depth)
             for move in legal_moves
         ]
         for future in as_completed(futures):
