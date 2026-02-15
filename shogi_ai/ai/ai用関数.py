@@ -2,6 +2,9 @@ import random
 from shogi_ai.駒 import *
 from shogi_ai.対局用.対局用関数 import *
 
+# 盤面ハッシュ
+board_hashes = {}
+
 # 初手の定石
 def opening_move(board):
     joseki_moves = []
@@ -101,13 +104,21 @@ def evaluate(board):
 
 # 木探索
 def tree_search(board, position_history, depth, alpha, beta):
+    # 盤面ハッシュによる軽量化
+    root_key = position_key(board)
+    if root_key in board_hashes and board_hashes[root_key][0] >= depth:
+        return board_hashes[root_key][1], 1
     # リーフ
     if board.is_checkmate(board.turn):
+        board_hashes[root_key] = (depth, -100000 + depth)
         return -100000 + depth, 1
-    if position_history[position_key(board)] == 4:
+    if position_history[root_key] == 4:
+        board_hashes[root_key] = (depth, -100000 + depth)
         return -100000 + depth, 1
     if depth == 0:
-        return evaluate(board), 1
+        score = evaluate(board)
+        board_hashes[root_key] = (depth, score)
+        return score, 1
     # ノード
     captur_moves = []
     nari_moves = []
@@ -140,4 +151,5 @@ def tree_search(board, position_history, depth, alpha, beta):
         alpha = max(alpha, best_score)
         if alpha >= beta:
             break
+    board_hashes[root_key] = (depth, best_score)
     return best_score, total_nodes
