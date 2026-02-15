@@ -38,6 +38,6 @@ def ai_think(board, position_history, depth, player_sente_or_gote):
                 best_score = score
                 best_move = move
             total_nodes += node_count
-            print("\r\033[K最終結果: " + best_move.to_string(player_sente_or_gote) + "  評価値: " + str(best_score) + "  ノード数: " + str(total_nodes), end="")
+            print("\r\033[K現在の最善手: " + best_move.to_string(player_sente_or_gote) + "  評価値: " + str(best_score) + "  ノード数: " + str(total_nodes), end="")
     print("\r\033[K最終結果: " + best_move.to_string(player_sente_or_gote) + "  評価値: " + str(best_score) + "  ノード数: " + str(total_nodes))
     return best_move
