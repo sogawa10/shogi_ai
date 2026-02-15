@@ -150,6 +150,11 @@ class 盤面:
             if len(lm) == 0:
                 is_checkmate = True
         return is_checkmate
+
+    # 棋譜を読み込んで盤面を構築
+    def load_kifu(self, kifu):
+        for move in kifu:
+            self.apply_move(move)
     
     # 盤面の手のリストを返す
     def generate_board_moves(self, turn):
@@ -202,86 +207,6 @@ class 盤面:
                             手(koma, None, (nx, ny), uchite=True)
                         )
         return moves
-    
-    # 手を盤面に適用
-    def apply_move(self, move):
-        histry = {
-            "move": move,
-            "captured_nari": False
-        }
-        if move.uchite:
-            tx, ty = move.to_pos
-            new_koma = None
-            for koma in self.mochigoma[self.turn]:
-                if type(koma) is type(move.koma):
-                    new_koma = koma
-                    break
-            new_koma.x = tx
-            new_koma.y = ty
-            self.board[tx][ty] = new_koma
-            self.remove_mochigoma(self.turn, new_koma)
-        else:
-            fx, fy = move.from_pos
-            tx, ty = move.to_pos
-            new_koma = self.board[fx][fy]
-            if move.komadori is not None:
-                cap_koma = move.komadori
-                histry["captured_nari"] = cap_koma.is_nari()
-                cap_koma.x = None
-                cap_koma.y = None
-                cap_koma.unaru()
-                cap_koma.sente_gote = self.turn
-                self.add_mochigoma(self.turn, cap_koma)
-            new_koma.x = tx
-            new_koma.y = ty
-            self.board[fx][fy] = None
-            self.board[tx][ty] = new_koma
-            if move.nari:
-                new_koma.naru()
-            if isinstance(new_koma, 王):
-                self.change_ou_position(self.turn, tx, ty)
-        self.change_turn()
-        self.move_count += 1
-        return histry
-    
-    # 盤面を元に戻す
-    def ando_move(self, histry):
-        self.change_turn()
-        self.move_count -= 1
-        move = histry["move"]
-        captured_nari = histry["captured_nari"]
-        if move.uchite:
-            tx, ty = move.to_pos
-            koma = self.board[tx][ty]
-            koma.x = None
-            koma.y = None
-            self.board[tx][ty] = None
-            self.add_mochigoma(self.turn, koma)
-        else:
-            fx, fy = move.from_pos
-            tx, ty = move.to_pos
-            koma = self.board[tx][ty]
-            koma.x = fx
-            koma.y = fy
-            self.board[fx][fy] = koma
-            self.board[tx][ty] = None
-            if move.komadori is not None:
-                cap_koma = move.komadori
-                self.remove_mochigoma(self.turn, cap_koma)
-                if captured_nari:
-                    cap_koma.naru()
-                if self.turn == "先手":
-                    enemy = "後手"
-                else:
-                    enemy = "先手"
-                cap_koma.sente_gote = enemy
-                cap_koma.x = tx
-                cap_koma.y = ty
-                self.board[tx][ty] = cap_koma
-            if move.nari:
-                koma.unaru()
-            if isinstance(koma, 王):
-                self.change_ou_position(self.turn, fx, fy)
 
     # 将棋固有のルールを手に適応
     def filter_shogi_rules(self, board_moves, uchite, check_uchifuzume=True):
@@ -362,3 +287,83 @@ class 盤面:
         else:
             final_moves=legal_moves2
         return final_moves
+
+    # 手を盤面に適用
+    def apply_move(self, move):
+        histry = {
+            "move": move,
+            "captured_nari": False
+        }
+        if move.uchite:
+            tx, ty = move.to_pos
+            new_koma = None
+            for koma in self.mochigoma[self.turn]:
+                if type(koma) is type(move.koma):
+                    new_koma = koma
+                    break
+            new_koma.x = tx
+            new_koma.y = ty
+            self.board[tx][ty] = new_koma
+            self.remove_mochigoma(self.turn, new_koma)
+        else:
+            fx, fy = move.from_pos
+            tx, ty = move.to_pos
+            new_koma = self.board[fx][fy]
+            if move.komadori is not None:
+                cap_koma = move.komadori
+                histry["captured_nari"] = cap_koma.is_nari()
+                cap_koma.x = None
+                cap_koma.y = None
+                cap_koma.unaru()
+                cap_koma.sente_gote = self.turn
+                self.add_mochigoma(self.turn, cap_koma)
+            new_koma.x = tx
+            new_koma.y = ty
+            self.board[fx][fy] = None
+            self.board[tx][ty] = new_koma
+            if move.nari:
+                new_koma.naru()
+            if isinstance(new_koma, 王):
+                self.change_ou_position(self.turn, tx, ty)
+        self.change_turn()
+        self.move_count += 1
+        return histry
+    
+    # 盤面を元に戻す
+    def ando_move(self, histry):
+        self.change_turn()
+        self.move_count -= 1
+        move = histry["move"]
+        captured_nari = histry["captured_nari"]
+        if move.uchite:
+            tx, ty = move.to_pos
+            koma = self.board[tx][ty]
+            koma.x = None
+            koma.y = None
+            self.board[tx][ty] = None
+            self.add_mochigoma(self.turn, koma)
+        else:
+            fx, fy = move.from_pos
+            tx, ty = move.to_pos
+            koma = self.board[tx][ty]
+            koma.x = fx
+            koma.y = fy
+            self.board[fx][fy] = koma
+            self.board[tx][ty] = None
+            if move.komadori is not None:
+                cap_koma = move.komadori
+                self.remove_mochigoma(self.turn, cap_koma)
+                if captured_nari:
+                    cap_koma.naru()
+                if self.turn == "先手":
+                    enemy = "後手"
+                else:
+                    enemy = "先手"
+                cap_koma.sente_gote = enemy
+                cap_koma.x = tx
+                cap_koma.y = ty
+                self.board[tx][ty] = cap_koma
+            if move.nari:
+                koma.unaru()
+            if isinstance(koma, 王):
+                self.change_ou_position(self.turn, fx, fy)
