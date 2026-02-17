@@ -10,6 +10,7 @@
 
 このプロジェクトを動かすためには、以下のライブラリが必要です．
 
+- python-dotenv
 - fastapi
 - uvicorn
 - pydantic
