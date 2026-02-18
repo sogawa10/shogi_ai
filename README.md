@@ -36,6 +36,10 @@ APIサーバーを起動する際は，以下のコマンドを入力してく�
 
 ![Image](https://github.com/user-attachments/assets/6f1ec107-2347-49db-ae23-745df532a6e7)
 
+## ER図
+
+![Image](https://github.com/user-attachments/assets/b876df3d-b4d5-4fb5-af66-cf79e2e49945)
+
 ## APIの仕様
 
 third-partyの将棋AIを作成する際は，以下の仕様に準じてください．
