@@ -34,7 +34,7 @@ async def init_game():
     # posgreSQLに接続
     conn = psycopg2.connect(
         host=os.getenv("DB_NAME"),
-        detabase=os.getenv("DB_HOST"),
+        database=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         port=os.getenv("DB_PORT")
@@ -53,7 +53,7 @@ async def update_board(request: UpdateBoardRequest):
     # posgreSQLに接続
     conn = psycopg2.connect(
         host=os.getenv("DB_NAME"),
-        detabase=os.getenv("DB_HOST"),
+        database=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         port=os.getenv("DB_PORT")
@@ -76,7 +76,7 @@ async def ai_move(request: AiMoveRequest):
     # posgreSQLに接続
     conn = psycopg2.connect(
         host=os.getenv("DB_NAME"),
-        detabase=os.getenv("DB_HOST"),
+        database=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         port=os.getenv("DB_PORT")
