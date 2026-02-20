@@ -36,9 +36,33 @@ APIサーバーを起動する際は，以下のコマンドを入力してく�
 
 ![Image](https://github.com/user-attachments/assets/6f1ec107-2347-49db-ae23-745df532a6e7)
 
-## ER図
+## データベースの構造
 
-![Image](https://github.com/user-attachments/assets/b876df3d-b4d5-4fb5-af66-cf79e2e49945)
+![Image](https://github.com/user-attachments/assets/e46d6d69-1cdc-47d9-b1a0-f6cd7d7510ea)
+
+ER図の属性については，以下を参考にしてください．
+
+1. users ()
+   - user_name → 
+   - password_hash → 
+   - created_at → 
+   - updated_at → 
+2. ai_endpoints()
+   - user_id → 
+   - ai_name → 
+   - full_url → 
+   - created_at → 
+   - updated_at → 
+3. games()
+   - created_by_user_id → 
+   - sente_user_id → 
+   - sente_ai_id → 
+   - gote_user_id → 
+   - gote_ai_id → 
+   - kifu → 
+   - status → 
+   - result → 
+   - created_at → 
 
 ## APIの仕様
 
