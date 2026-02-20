@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import uuid
 import psycopg2
@@ -27,18 +27,22 @@ class AiMoveRequest(BaseModel):
 class AiMoveResponse(BaseModel):
     kifu: str
 
-# 新規対局作成
-@app.get("/init-game", response_model=InitGameResponse)
-async def init_game():
-    game_id = str(uuid.uuid4())
-    # posgreSQLに接続
-    conn = psycopg2.connect(
-        host=os.getenv("DB_NAME"),
-        database=os.getenv("DB_HOST"),
+# posgreSQLに接続する関数
+def get_connection():
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         port=os.getenv("DB_PORT")
     )
+
+# 新規対局作成
+@app.post("/init-game", response_model=InitGameResponse)
+def init_game():
+    game_id = str(uuid.uuid4())
+    # posgreSQLに接続
+    conn = get_connection()
     cur = conn.cursor()
     # posgreSQLにgame_idを保存
     cur.execute("SQL文をここに記述")
@@ -49,19 +53,15 @@ async def init_game():
 
 # 盤面更新
 @app.post("/update-board", response_model=UpdateBoardResponse)
-async def update_board(request: UpdateBoardRequest):
+def update_board(request: UpdateBoardRequest):
     # posgreSQLに接続
-    conn = psycopg2.connect(
-        host=os.getenv("DB_NAME"),
-        database=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT")
-    )
+    conn = get_connection()
     cur = conn.cursor()
     # posgreSQLからgame_idに対応する棋譜を取得し，盤面を復元
     cur.execute("SQL文をここに記述")
     result = cur.fetchone()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Game not found")
     # requestのmoveが合法か判断し，盤面を更新
     # 棋譜に手を追加し，posgreSQLに保存
     cur.execute("SQL文をここに記述")
@@ -72,19 +72,15 @@ async def update_board(request: UpdateBoardRequest):
 
 # first-partyのAIの手を盤面に適応
 @app.post("/ai-move", response_model=AiMoveResponse)
-async def ai_move(request: AiMoveRequest):
+def ai_move(request: AiMoveRequest):
     # posgreSQLに接続
-    conn = psycopg2.connect(
-        host=os.getenv("DB_NAME"),
-        database=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT")
-    )
+    conn = get_connection()
     cur = conn.cursor()
     # posgreSQLからgame_idに対応する棋譜を取得し，盤面を復元
     cur.execute("SQL文をここに記述")
     result = cur.fetchone()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Game not found")
     # 盤面をAIに渡して次の手を取得し，盤面を更新
     # 棋譜に手を追加し，posgreSQLに保存
     cur.execute("SQL文をここに記述")
