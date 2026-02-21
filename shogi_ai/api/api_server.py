@@ -11,7 +11,7 @@ load_dotenv()
 # サーバーの起動から停止までのライフスパンを管理
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 起動時
+    # 起動時（データベースプールの初期化）
     app.state.db_pool = pool.SimpleConnectionPool(
         minconn=1,
         maxconn=10,
@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     )
     # サーバー稼働中
     yield
-    # 終了時
+    # 終了時（データベースプールを閉じる）
     app.state.db_pool.closeall()
 
 app = FastAPI(lifespan=lifespan)
@@ -57,7 +57,7 @@ def init_game():
         with conn:
             with conn.cursor() as cur:
                 # posgreSQLにgame_idを保存
-                cur.execute("INSERT INTO games (game_id) VALUES (%s)", (game_id,))
+                cur.execute("SQL文をここに記述")
         return InitGameResponse(game_id=game_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
