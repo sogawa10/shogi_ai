@@ -45,7 +45,8 @@ def init_game():
     conn = None
     try:
         # posgreSQLに接続
-        with closing(get_connection()) as conn:
+        conn = get_connection()
+        with conn:
             with conn.cursor() as cur:
                 # posgreSQLにgame_idを保存
                 cur.execute("INSERT INTO games (game_id) VALUES (%s)", (game_id,))
