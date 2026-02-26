@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -49,7 +50,8 @@ class AiMoveResponse(BaseModel):
 # 新規対局作成
 @app.post("/init-game", response_model=InitGameResponse)
 def init_game():
-    game_id = str(uuid.uuid4())
+    game_id = uuid.uuid4()
+    now = datetime.now(timezone.utc)
     conn = None
     try:
         # posgreSQLに接続
@@ -58,7 +60,7 @@ def init_game():
             with conn.cursor() as cur:
                 # posgreSQLにgame_idを保存
                 cur.execute("SQL文をここに記述")
-        return InitGameResponse(game_id=game_id)
+        return InitGameResponse(game_id=str(game_id))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -68,6 +70,7 @@ def init_game():
 # 盤面更新
 @app.post("/update-board", response_model=UpdateBoardResponse)
 def update_board(request: UpdateBoardRequest):
+    now = datetime.now(timezone.utc)
     conn = None
     try:
         # posgreSQLに接続
@@ -94,6 +97,7 @@ def update_board(request: UpdateBoardRequest):
 # first-partyのAIの手を盤面に適応
 @app.post("/ai-move", response_model=AiMoveResponse)
 def ai_move(request: AiMoveRequest):
+    now = datetime.now(timezone.utc)
     conn = None
     try:
         # posgreSQLに接続
