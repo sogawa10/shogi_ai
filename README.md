@@ -53,7 +53,7 @@ ER図の属性については，以下を参考にしてください．
    → レコードが作成された日時．
    - updated_at\
    → レコードが最後に更新された日時．
-2. ai_endpoints\ (third-partyの将棋AIを管理)
+2. ai_endpoints (third-partyの将棋AIを管理)
    - ai_id\
    → 将棋AI固有のID．
    - user_id\
@@ -95,6 +95,22 @@ ER図の属性については，以下を参考にしてください．
    → SENTE_WIN・GOTE_WIN・DRAW・NULL のいずれか．
    - created_at\
    → レコードが作成された日時．
+
+postgreSQLでデータベースを構築する際は，以下を参考にしてください．
+
+1. 管理者ユーザーであるpostgresでRDBMSにログインする．
+   - psql -U postgres
+2. ログイン後，データベースやユーザーを作成する．
+   - CREATE DATABASE データベース名;
+   - CREATE USER ユーザー名 WITH PASSWORD 'パスワード';
+3. ユーザーに権限を与える．
+   - GRANT ALL PRIVILEGES ON DATABASE データベース名 TO ユーザー名;
+4. 一度ログアウトして，SQLファイル（constraints.sqlと，create_tables.sqlと，indexes.sql）をもとにDBを構築する．
+   - psql -U ユーザー名 -d データベース名 -f db_schema/constraints.sql
+   - psql -U ユーザー名 -d データベース名 -f db_schema/create_tables.sql
+   - psql -U ユーザー名 -d データベース名 -f db_schema/indexes.sql
+5. 一度ログアウトして，作成したデータベースに，作成したユーザーでログインする．
+   - psql -U ユーザー名 -d データベース名
 
 ## APIの仕様
 
