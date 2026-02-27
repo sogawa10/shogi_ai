@@ -101,15 +101,13 @@
 1. 管理者ユーザーである**postgres**でRDBMSにログインする．
    - psql -U postgres
 2. ログイン後，**データベース**や**ユーザー**を作成する．
-   - CREATE DATABASE データベース名;
    - CREATE USER ユーザー名 WITH PASSWORD 'パスワード';
-3. ユーザーに権限を与える．
-   - GRANT ALL PRIVILEGES ON DATABASE データベース名 TO ユーザー名;
-4. 一度ログアウトして，SQLファイル（constraints.sqlと，create_tables.sqlと，indexes.sql）をもとにDBを構築する．
-   - psql -U ユーザー名 -d データベース名 -f db_schema/constraints.sql
+   - CREATE DATABASE データベース名 OWNER ユーザー名;
+3. 一度ログアウトして，SQLファイル（constraints.sqlと，create_tables.sqlと，indexes.sql）をもとにDBを構築する．
    - psql -U ユーザー名 -d データベース名 -f db_schema/create_tables.sql
+   - psql -U ユーザー名 -d データベース名 -f db_schema/constraints.sql
    - psql -U ユーザー名 -d データベース名 -f db_schema/indexes.sql
-5. 一度ログアウトして，作成したデータベースに，作成したユーザーでログインする．
+4. 一度ログアウトして，作成したデータベースに，作成したユーザーでログインする．
    - psql -U ユーザー名 -d データベース名
 
 ## APIの仕様
