@@ -6,13 +6,15 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from psycopg2 import pool
+import psycopg2.extras
 
 load_dotenv()
 
 # サーバーの起動から停止までのライフスパンを管理
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 起動時（データベースプールの初期化）
+    # 起動時（UUIDをpsycopg2で扱えるようにしたうえで，データベースプールの初期化を行う）
+    psycopg2.extras.register_uuid()
     app.state.db_pool = pool.SimpleConnectionPool(
         minconn=1,
         maxconn=10,
@@ -59,7 +61,25 @@ def init_game():
         with conn:
             with conn.cursor() as cur:
                 # posgreSQLにgame_idを保存
-                cur.execute("SQL文をここに記述")
+                cur.execute("""
+                                INSERT INTO games (
+                                    game_id,
+                                    created_by_user_id,
+                                    sente_player_id,
+                                    gote_player_id,
+                                    status,
+                                    created_at
+                                )
+                                VALUES (
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s,
+                                    %s
+                                )
+                                ON CONFLICT (game_id) DO NOTHING;
+                            """, (game_id, "", "", "", "PLAYING", now))
         return InitGameResponse(game_id=str(game_id))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
