@@ -33,6 +33,46 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # リクエスト/レスポンスのモデル
+class RegisterUserRequest(BaseModel):
+
+class RegisterUserResponse(BaseModel):
+
+
+class GetUserResponse(BaseModel):
+
+
+class GetUserGamesResponse(BaseModel):
+
+
+class UpdateUserRequest(BaseModel):
+
+class UpdateUserResponse(BaseModel):
+
+
+class DeleteUserResponse(BaseModel):
+
+
+class LoginRequest(BaseModel):
+
+class LoginResponse(BaseModel):
+
+
+class RegisterAiRequest(BaseModel):
+
+class RegisterAiResponse(BaseModel):
+
+
+class GetAisResponse(BaseModel):
+
+
+class UpdateAiRequest(BaseModel):
+
+class UpdateAiResponse(BaseModel):
+
+
+class DeleteAiResponse(BaseModel):
+
+
 class InitGameRequest(BaseModel):
     created_by_user_id: str
     sente_player_type: str
@@ -45,67 +85,81 @@ class InitGameRequest(BaseModel):
 class InitGameResponse(BaseModel):
     game_id: str
 
+
+class GetKifuResponse(BaseModel):
+
+
 class UpdateBoardRequest(BaseModel):
-    game_id: str
     move: str | None = None
 
 class UpdateBoardResponse(BaseModel):
     kifu: str
 
-class AiMoveRequest(BaseModel):
-    game_id: str
 
+class AiMoveRequest(BaseModel):
 
 class AiMoveResponse(BaseModel):
     kifu: str
 
+
+class EndGameRequest(BaseModel):
+
+class EndGameResponse(BaseModel):
+
+
+
 # ユーザー登録
-@app.post("/register-user")
-def register_user():
+@app.post("/users", response_model=RegisterUserResponse)
+def register_user(request: RegisterUserRequest):
     pass
 
 # ユーザー情報を取得
-@app.get("/get-user/{user_name}")
+@app.get("/users/{user_name}", response_model=GetUserResponse)
 def get_user(user_name: str):
     pass
 
+# 対局を取得
+@app.get("/users/{user_id}/games", response_model=GetUserGamesResponse)
+def get_user_games(user_id: str):
+    pass
+
 # ユーザーを更新
-@app.post("/update-user")
-def update_user():
+@app.put("/users/{user_id}", response_model=UpdateUserResponse)
+def update_user(user_id: str, request: UpdateUserRequest):
     pass
 
 # ユーザーを削除
-@app.delete("/delete-user")
-def delete_user():
+@app.delete("/users/{user_id}", response_model=DeleteUserResponse)
+def delete_user(user_id: str):
     pass
 
 # ログイン
-@app.post("/login")
-def login():
+@app.post("/login", response_model=LoginResponse)
+def login(request: LoginRequest):
     pass
 
 # third-partyのAIを登録
-@app.post("/register-ai")
-def register_ai():
+@app.post("/ais", response_model=RegisterAiResponse)
+def register_ai(request: RegisterAiRequest):
     pass
 
 # third-partyのAI情報を取得
-@app.get("/get-ai/{ai_name}")
-def get_ai(ai_name: str):
+@app.get("/ais/{ai_name}", response_model=GetAisResponse)
+def get_ais(ai_name: str):
     pass
 
 # third-partyのAIを更新
-@app.post("/update-ai")
-def update_ai():
+@app.put("/ais/{ai_id}", response_model=UpdateAiResponse)
+def update_ai(ai_id: str, request: UpdateAiRequest):
     pass
 
 # third-partyのAIを削除
-@app.delete("/delete-ai")
-def delete_ai():
+@app.delete("/ais/{ai_id}", response_model=DeleteAiResponse)
+def delete_ai(ai_id: str):
     pass
 
 # 新規対局作成
-@app.post("/init-game", response_model=InitGameResponse)
+@app.post("/games", response_model=InitGameResponse)
 def init_game(request: InitGameRequest):
     game_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
@@ -144,19 +198,14 @@ def init_game(request: InitGameRequest):
         if conn:
             app.state.db_pool.putconn(conn)
 
-# 対局を取得
-@app.get("/get-game/{user_id}")
-def get_game(user_id: str):
-    pass
-
 # 棋譜を取得
-@app.get("/get-kifu/{game_id}")
+@app.get("/games/{game_id}/kifu", response_model=GetKifuResponse)
 def get_kifu(game_id: str):
     pass
 
 # 盤面更新
-@app.post("/update-board", response_model=UpdateBoardResponse)
-def update_board(request: UpdateBoardRequest):
+@app.post("/games/{game_id}/moves", response_model=UpdateBoardResponse)
+def update_board(game_id: str, request: UpdateBoardRequest):
     now = datetime.now(timezone.utc)
     conn = None
     try:
@@ -182,8 +231,8 @@ def update_board(request: UpdateBoardRequest):
             app.state.db_pool.putconn(conn)
 
 # first-partyのAIの手を盤面に適応
-@app.post("/ai-move", response_model=AiMoveResponse)
-def ai_move(request: AiMoveRequest):
+@app.post("/games/{game_id}/ai-move", response_model=AiMoveResponse)
+def ai_move(game_id: str, request: AiMoveRequest):
     now = datetime.now(timezone.utc)
     conn = None
     try:
@@ -209,6 +258,6 @@ def ai_move(request: AiMoveRequest):
             app.state.db_pool.putconn(conn)
 
 # 対局を終了
-@app.post("/end-game")
-def end_game():
+@app.put("/games/{game_id}", response_model=EndGameResponse)
+def end_game(game_id: str, request: EndGameRequest):
     pass
