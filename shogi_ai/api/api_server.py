@@ -4,7 +4,7 @@ import psycopg2.extras
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from psycopg2 import pool
 from shogi_ai.api.api用関数 import *
@@ -34,43 +34,76 @@ app = FastAPI(lifespan=lifespan)
 
 # リクエスト/レスポンスのモデル
 class RegisterUserRequest(BaseModel):
+    user_name: str
+    password: str
 
 class RegisterUserResponse(BaseModel):
+    user_id: str | None = None
+    created: bool
 
 
 class GetUserResponse(BaseModel):
-
+    user_id: str
+    user_name: str
+    
 
 class GetUserGamesResponse(BaseModel):
+    game_id: str
+    created_by_user_id: str
+    sente_player_id: str
+    gote_player_id: str
+    kifu: str
+    status: str
+    result: str
 
 
 class UpdateUserRequest(BaseModel):
+    user_name: str | None = None
+    password: str | None = None
 
 class UpdateUserResponse(BaseModel):
+    changed: bool
 
 
 class DeleteUserResponse(BaseModel):
+    deleted: bool
 
 
 class LoginRequest(BaseModel):
+    user_name: str
+    password: str
 
 class LoginResponse(BaseModel):
+    user_id: str | None = None
+    access_token: str | None = None
+    success: bool
 
 
 class RegisterAiRequest(BaseModel):
+    ai_name: str
+    full_url: str
 
 class RegisterAiResponse(BaseModel):
+    ai_id: str | None = None
+    created: bool
 
 
 class GetAisResponse(BaseModel):
+    ai_id: str
+    ai_name: str
+    full_url: str
 
 
 class UpdateAiRequest(BaseModel):
+    ai_name: str
+    full_url: str
 
 class UpdateAiResponse(BaseModel):
+    changed: bool
 
 
 class DeleteAiResponse(BaseModel):
+    deleted: bool
 
 
 class InitGameRequest(BaseModel):
@@ -87,6 +120,7 @@ class InitGameResponse(BaseModel):
 
 
 class GetKifuResponse(BaseModel):
+    kifu: str
 
 
 class UpdateBoardRequest(BaseModel):
@@ -96,15 +130,13 @@ class UpdateBoardResponse(BaseModel):
     kifu: str
 
 
-class AiMoveRequest(BaseModel):
-
 class AiMoveResponse(BaseModel):
     kifu: str
 
 
-class EndGameRequest(BaseModel):
-
 class EndGameResponse(BaseModel):
+    status: str
+    result: str
 
 
 
@@ -114,23 +146,23 @@ def register_user(request: RegisterUserRequest):
     pass
 
 # ユーザー情報を取得
-@app.get("/users/{user_name}", response_model=GetUserResponse)
-def get_user(user_name: str):
+@app.get("/users/me", response_model=GetUserResponse)
+def get_user(user_id: str = Depends(get_current_user)):
     pass
 
 # 対局を取得
-@app.get("/users/{user_id}/games", response_model=GetUserGamesResponse)
-def get_user_games(user_id: str):
+@app.get("/users/me/games", response_model=list[GetUserGamesResponse])
+def get_user_games(user_id: str = Depends(get_current_user)):
     pass
 
 # ユーザーを更新
-@app.put("/users/{user_id}", response_model=UpdateUserResponse)
-def update_user(user_id: str, request: UpdateUserRequest):
+@app.put("/users/me", response_model=UpdateUserResponse)
+def update_user(request: UpdateUserRequest, user_id: str = Depends(get_current_user)):
     pass
 
 # ユーザーを削除
-@app.delete("/users/{user_id}", response_model=DeleteUserResponse)
-def delete_user(user_id: str):
+@app.delete("/users/me", response_model=DeleteUserResponse)
+def delete_user(user_id: str = Depends(get_current_user)):
     pass
 
 # ログイン
@@ -140,27 +172,27 @@ def login(request: LoginRequest):
 
 # third-partyのAIを登録
 @app.post("/ais", response_model=RegisterAiResponse)
-def register_ai(request: RegisterAiRequest):
+def register_ai(request: RegisterAiRequest, user_id: str = Depends(get_current_user)):
     pass
 
 # third-partyのAI情報を取得
-@app.get("/ais/{ai_name}", response_model=GetAisResponse)
-def get_ais(ai_name: str):
+@app.get("/ais/{ai_name}", response_model=list[GetAisResponse])
+def get_ais(ai_name: str, user_id: str = Depends(get_current_user)):
     pass
 
 # third-partyのAIを更新
 @app.put("/ais/{ai_id}", response_model=UpdateAiResponse)
-def update_ai(ai_id: str, request: UpdateAiRequest):
+def update_ai(request: UpdateAiRequest, ai_id: str, user_id: str = Depends(get_current_user)):
     pass
 
 # third-partyのAIを削除
 @app.delete("/ais/{ai_id}", response_model=DeleteAiResponse)
-def delete_ai(ai_id: str):
+def delete_ai(ai_id: str, user_id: str = Depends(get_current_user)):
     pass
 
 # 新規対局作成
 @app.post("/games", response_model=InitGameResponse)
-def init_game(request: InitGameRequest):
+def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)):
     game_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
     conn = None
@@ -200,12 +232,12 @@ def init_game(request: InitGameRequest):
 
 # 棋譜を取得
 @app.get("/games/{game_id}/kifu", response_model=GetKifuResponse)
-def get_kifu(game_id: str):
+def get_kifu(game_id: str, user_id: str = Depends(get_current_user)):
     pass
 
 # 盤面更新
 @app.post("/games/{game_id}/moves", response_model=UpdateBoardResponse)
-def update_board(game_id: str, request: UpdateBoardRequest):
+def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depends(get_current_user)):
     now = datetime.now(timezone.utc)
     conn = None
     try:
@@ -232,7 +264,7 @@ def update_board(game_id: str, request: UpdateBoardRequest):
 
 # first-partyのAIの手を盤面に適応
 @app.post("/games/{game_id}/ai-move", response_model=AiMoveResponse)
-def ai_move(game_id: str, request: AiMoveRequest):
+def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
     now = datetime.now(timezone.utc)
     conn = None
     try:
@@ -259,5 +291,5 @@ def ai_move(game_id: str, request: AiMoveRequest):
 
 # 対局を終了
 @app.put("/games/{game_id}", response_model=EndGameResponse)
-def end_game(game_id: str, request: EndGameRequest):
+def end_game(game_id: str, user_id: str = Depends(get_current_user)):
     pass

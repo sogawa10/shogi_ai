@@ -1,4 +1,8 @@
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBearer
+
+# Bearerトークン認証のヘッダを解析するクラス
+security = HTTPBearer()
 
 # player情報を取得する関数
 def get_player_id(cur, player_type, user_id, ai_id):
@@ -37,3 +41,11 @@ def get_player_id(cur, player_type, user_id, ai_id):
 
     else:
         raise HTTPException(status_code=400, detail="Invalid player_type")
+    
+# アクセストークンを作成
+def create_access_token(user_id):
+    pass
+
+# アクセストークンを検証
+def get_current_user(credentials = Depends(security)):
+    pass
