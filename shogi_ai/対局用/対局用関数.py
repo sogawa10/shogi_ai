@@ -239,6 +239,8 @@ def count_nyugyoku_points(board):
     return score, in_count
 
 def check_game_end(board, position_history, position_sequence):
+    result = None
+    result_type = None
     # 終了判定
     if board.is_checkmate(board.turn):
         if board.turn == "先手":

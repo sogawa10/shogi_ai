@@ -468,8 +468,7 @@ def get_kifu(game_id: str, user_id: str = Depends(get_current_user)):
 def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depends(get_current_user)):
     board = 盤面()
     is_legal_move = False
-    game_result = None
-    game_result_type = None
+    status = "PLAYING"
     conn = None
     try:
         # posgreSQLに接続
@@ -481,7 +480,8 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
                     SELECT kifu
                     FROM games
                     WHERE game_id = %s
-                    AND created_by_user_id = %s;
+                    AND created_by_user_id = %s
+                    FOR UPDATE;
                 """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
@@ -512,21 +512,36 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
                 # 手を盤面に適応
                 history = board.apply_move(now_move)
                 game_result, game_result_type = check_game_end(board, position_history, position_sequence)
+                if game_result:
+                    status = "FINISHED"
                 # 棋譜に手を追加し，posgreSQLに保存
                 kifu = (kifu + " " + move).strip()
                 cur.execute("""
                     UPDATE games
-                    SET kifu = %s
+                    SET kifu = %s, status = %s, result = %s
                     WHERE game_id = %s
                     AND created_by_user_id = %s
-                    AND status = %s;
-                """, (kifu, game_id, user_id, "PLAYING"))
+                    AND status = %s
+                """, (kifu, status, game_result, game_id, user_id, "PLAYING"))
                 if cur.rowcount == 0:
                     raise HTTPException(status_code=404, detail="Game not found")
         return UpdateBoardResponse(is_legal_move=is_legal_move, kifu=kifu, result=game_result, result_type=game_result_type)
     except HTTPException:
         raise
     except Exception as e:
+        # エラー時にABORTEDする
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE games
+                        SET status = 'ABORTED'
+                        WHERE game_id = %s
+                        AND created_by_user_id = %s
+                        AND status = %s;
+                    """, (game_id, user_id, "PLAYING"))
+        except:
+            pass
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if conn:
@@ -536,8 +551,7 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
 @app.post("/games/{game_id}/ai-move", response_model=AiMoveResponse)
 def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
     board = 盤面()
-    game_result = None
-    game_result_type = None
+    status = "PLAYING"
     conn = None
     try:
         # posgreSQLに接続
@@ -549,7 +563,8 @@ def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
                     SELECT kifu
                     FROM games
                     WHERE game_id = %s
-                    AND created_by_user_id = %s;
+                    AND created_by_user_id = %s
+                    FOR UPDATE;
                 """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
@@ -561,50 +576,36 @@ def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
                 move = ai_move.to_string()
                 history = board.apply_move(ai_move)
                 game_result, game_result_type = check_game_end(board, position_history, position_sequence)
+                if game_result:
+                    status = "FINISHED"
                 # 棋譜に手を追加し，posgreSQLに保存
                 kifu = (kifu + " " + move).strip()
                 cur.execute("""
                     UPDATE games
-                    SET kifu = %s
+                    SET kifu = %s, status = %s, result = %s
                     WHERE game_id = %s
                     AND created_by_user_id = %s
-                    AND status = %s;
-                """, (kifu, game_id, user_id, "PLAYING"))
+                    AND status = %s
+                """, (kifu, status, game_result, game_id, user_id, "PLAYING"))
                 if cur.rowcount == 0:
                     raise HTTPException(status_code=404, detail="Game not found")
         return AiMoveResponse(kifu=kifu, result=game_result, result_type=game_result_type)
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if conn:
-            app.state.db_pool.putconn(conn)
-
-# 対局を終了
-@app.put("/games/{game_id}", response_model=EndGameResponse)
-def end_game(request: EndGameRequest, game_id: str, user_id: str = Depends(get_current_user)):
-    conn = None
-    try:
-        # posgreSQLに接続
-        conn = app.state.db_pool.getconn()
-        with conn:
-            with conn.cursor() as cur:
-                # posgreSQL内の対局情報を修正（終了状態に）
-                cur.execute("""
-                    UPDATE games
-                    SET status = %s,
-                        result = %s
-                    WHERE game_id = %s
-                    AND created_by_user_id = %s
-                    AND status = %s;
-                """, ("FINISHED", request.result, game_id, user_id, "PLAYING"))
-                if cur.rowcount == 0:
-                    raise HTTPException(status_code=404, detail="Game not found")
-        return EndGameResponse(status="FINISHED", result=request.result)
-    except HTTPException:
-        raise
-    except Exception as e:
+        # エラー時にABORTEDする
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE games
+                        SET status = 'ABORTED'
+                        WHERE game_id = %s
+                        AND created_by_user_id = %s
+                        AND status = %s;
+                    """, (game_id, user_id, "PLAYING"))
+        except:
+            pass
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if conn:

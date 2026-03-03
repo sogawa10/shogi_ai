@@ -101,11 +101,3 @@ class AiMoveResponse(BaseModel):
     kifu: str
     result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
     result_type: Literal["CHECKMATE", "NYUGYOKU", "SENNICHITE", "RENZOKU_OTE_SENNICHITE", "MAX_MOVE"] | None
-
-
-class EndGameRequest(BaseModel):
-    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
-
-class EndGameResponse(BaseModel):
-    status: str
-    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
