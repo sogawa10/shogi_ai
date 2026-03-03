@@ -15,6 +15,8 @@
 - uvicorn
 - pydantic
 - psycopg2
+- bcrypt
+- python-jose
 
 ### このプロジェクトを動かすためには、以下のソフトウェアが必要です．
 

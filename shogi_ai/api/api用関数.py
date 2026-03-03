@@ -1,5 +1,13 @@
+import os
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer
+from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
+from jose import jwt, JWTError
+
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 
 # Bearerトークン認証のヘッダを解析するクラス
 security = HTTPBearer()
@@ -42,10 +50,26 @@ def get_player_id(cur, player_type, user_id, ai_id):
     else:
         raise HTTPException(status_code=400, detail="Invalid player_type")
     
-# アクセストークンを作成
+# アクセストークン（JET：JSON Web Token）を作成
 def create_access_token(user_id):
-    pass
+    # payload = JWTの中に入れるデータ
+    exp = datetime.now(timezone.utc) + timedelta(hours=2)
+    payload = {
+        "user_id": user_id,
+        "exp": exp
+    }
+    # JWTを生成
+    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return token, exp
 
 # アクセストークンを検証
 def get_current_user(credentials = Depends(security)):
-    pass
+    # HTTPヘッダの「Authorization: Bearer <token>」からトークンを取得
+    token = credentials.credentials
+    # トークンを検証し，user_idを取得
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload["user_id"]
+        return user_id
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")

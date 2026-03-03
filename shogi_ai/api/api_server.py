@@ -1,13 +1,15 @@
 import os
 import uuid
+import bcrypt
 import psycopg2.extras
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException
-from pydantic import BaseModel
 from psycopg2 import pool
+from psycopg2.errors import UniqueViolation
 from shogi_ai.api.api用関数 import *
+from shogi_ai.api.request_response_model import *
 
 load_dotenv()
 
@@ -32,163 +34,358 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# リクエスト/レスポンスのモデル
-class RegisterUserRequest(BaseModel):
-    user_name: str
-    password: str
-
-class RegisterUserResponse(BaseModel):
-    user_id: str | None = None
-    created: bool
-
-
-class GetUserResponse(BaseModel):
-    user_id: str
-    user_name: str
-    
-
-class GetUserGamesResponse(BaseModel):
-    game_id: str
-    created_by_user_id: str
-    sente_player_id: str
-    gote_player_id: str
-    kifu: str
-    status: str
-    result: str
-
-
-class UpdateUserRequest(BaseModel):
-    user_name: str | None = None
-    password: str | None = None
-
-class UpdateUserResponse(BaseModel):
-    changed: bool
-
-
-class DeleteUserResponse(BaseModel):
-    deleted: bool
-
-
-class LoginRequest(BaseModel):
-    user_name: str
-    password: str
-
-class LoginResponse(BaseModel):
-    user_id: str | None = None
-    access_token: str | None = None
-    success: bool
-
-
-class RegisterAiRequest(BaseModel):
-    ai_name: str
-    full_url: str
-
-class RegisterAiResponse(BaseModel):
-    ai_id: str | None = None
-    created: bool
-
-
-class GetAisResponse(BaseModel):
-    ai_id: str
-    ai_name: str
-    full_url: str
-
-
-class UpdateAiRequest(BaseModel):
-    ai_name: str
-    full_url: str
-
-class UpdateAiResponse(BaseModel):
-    changed: bool
-
-
-class DeleteAiResponse(BaseModel):
-    deleted: bool
-
-
-class InitGameRequest(BaseModel):
-    created_by_user_id: str
-    sente_player_type: str
-    sente_user_id: str | None = None
-    sente_ai_id: str | None = None
-    gote_player_type: str
-    gote_user_id: str | None = None
-    gote_ai_id: str | None = None
-
-class InitGameResponse(BaseModel):
-    game_id: str
-
-
-class GetKifuResponse(BaseModel):
-    kifu: str
-
-
-class UpdateBoardRequest(BaseModel):
-    move: str | None = None
-
-class UpdateBoardResponse(BaseModel):
-    kifu: str
-
-
-class AiMoveResponse(BaseModel):
-    kifu: str
-
-
-class EndGameResponse(BaseModel):
-    status: str
-    result: str
-
-
-
 # ユーザー登録
 @app.post("/users", response_model=RegisterUserResponse)
 def register_user(request: RegisterUserRequest):
-    pass
+    user_id = uuid.uuid4()
+    password_hash = bcrypt.hashpw(
+        request.password.encode(),
+        bcrypt.gensalt()
+        ).decode()
+    player_id = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQLにユーザー情報を保存
+                cur.execute("""
+                    INSERT INTO users (
+                        user_id,
+                        user_name,
+                        password_hash,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    );
+                """, (user_id, request.user_name, password_hash, now, now))
+                # posgreSQLにプレーヤー情報を保存
+                cur.execute("""
+                    INSERT INTO players (
+                        player_id,
+                        player_type,
+                        user_id
+                    )
+                    VALUES (
+                        %s,
+                        %s,
+                        %s
+                    );
+                """, (player_id, "USER", user_id))
+        return RegisterUserResponse(user_id=str(user_id), player_id=str(player_id))
+    except HTTPException:
+        raise
+    except UniqueViolation:
+        if conn:
+            conn.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="user_name already exists"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # ユーザー情報を取得
 @app.get("/users/me", response_model=GetUserResponse)
 def get_user(user_id: str = Depends(get_current_user)):
-    pass
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQLからユーザー情報を取得
+                cur.execute("""
+                    SELECT user_id, user_name 
+                    FROM users
+                    WHERE user_id = %s;
+                """, (user_id,))
+                result = cur.fetchone()
+                if result is None:
+                    raise HTTPException(status_code=404, detail="User not found")
+        return GetUserResponse(user_id=str(result[0]), user_name=result[1])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # 対局を取得
 @app.get("/users/me/games", response_model=list[GetUserGamesResponse])
 def get_user_games(user_id: str = Depends(get_current_user)):
-    pass
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                 # posgreSQLから対局情報を取得
+                cur.execute("""
+                    SELECT game_id, created_by_user_id, sente_player_id, gote_player_id, kifu, status, result
+                    FROM games
+                    WHERE created_by_user_id = %s;
+                """, (user_id,))
+                results = cur.fetchall()
+        return [
+            GetUserGamesResponse(game_id=str(r[0]), created_by_user_id=str(r[1]), sente_player_id=str(r[2]), gote_player_id=str(r[3]), kifu=r[4], status=r[5], result=r[6])
+            for r in results
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # ユーザーを更新
 @app.put("/users/me", response_model=UpdateUserResponse)
 def update_user(request: UpdateUserRequest, user_id: str = Depends(get_current_user)):
-    pass
-
-# ユーザーを削除
-@app.delete("/users/me", response_model=DeleteUserResponse)
-def delete_user(user_id: str = Depends(get_current_user)):
-    pass
+    if request.user_name is None and request.password is None:
+        raise HTTPException(status_code=400, detail="No update fields")
+    if request.password is not None:
+        password_hash = bcrypt.hashpw(
+            request.password.encode(),
+            bcrypt.gensalt()
+            ).decode()
+    now = datetime.now(timezone.utc)
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQL内のユーザー情報を修正
+                if request.user_name is not None and request.password is not None:
+                    cur.execute("""
+                        UPDATE users
+                        SET user_name = %s,
+                            password_hash = %s,
+                            updated_at = %s
+                        WHERE user_id = %s;
+                    """, (request.user_name, password_hash, now, user_id))
+                elif request.user_name is not None:
+                    cur.execute("""
+                        UPDATE users
+                        SET user_name = %s,
+                            updated_at = %s
+                        WHERE user_id = %s;
+                    """, (request.user_name, now, user_id))
+                elif request.password is not None:
+                    cur.execute("""
+                        UPDATE users
+                        SET password_hash = %s,
+                            updated_at = %s
+                        WHERE user_id = %s;
+                    """, (password_hash, now, user_id))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="User not found")
+        return UpdateUserResponse(user_id=str(user_id))
+    except HTTPException:
+        raise
+    except UniqueViolation:
+        if conn:
+            conn.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="user_name already exists"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # ログイン
 @app.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest):
-    pass
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQLからユーザー情報を取得
+                cur.execute("""
+                    SELECT user_id, password_hash
+                    FROM users
+                    WHERE user_name = %s;
+                """, (request.user_name,))
+                result = cur.fetchone()
+                if result is None:
+                    raise HTTPException(status_code=401, detail="Invalid user_name or password")
+                user_id, password_hash = result
+                # パスワードを検証
+                if not bcrypt.checkpw(request.password.encode(), password_hash.encode()):
+                    raise HTTPException(status_code=401, detail="Invalid user_name or password")
+                # アクセストークンを作成
+                access_token, exp = create_access_token(str(user_id))
+
+        return LoginResponse(user_id=str(user_id), access_token=access_token, exp=exp)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # third-partyのAIを登録
 @app.post("/ais", response_model=RegisterAiResponse)
 def register_ai(request: RegisterAiRequest, user_id: str = Depends(get_current_user)):
-    pass
+    ai_id = uuid.uuid4()
+    player_id = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQLにAI情報を保存
+                cur.execute("""
+                    INSERT INTO ai_endpoints (
+                        ai_id,
+                        user_id,
+                        ai_name,
+                        full_url,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    );
+                """, (ai_id, user_id, request.ai_name, request.full_url, now, now))
+                # posgreSQLにプレーヤー情報を保存
+                cur.execute("""
+                    INSERT INTO players (
+                        player_id,
+                        player_type,
+                        ai_id
+                    )
+                    VALUES (
+                        %s,
+                        %s,
+                        %s
+                    );
+                """, (player_id, "THIRD_PARTY_AI", ai_id))
+        return RegisterAiResponse(ai_id=str(ai_id), player_id=str(player_id))
+    except HTTPException:
+        raise
+    except UniqueViolation:
+        if conn:
+            conn.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="AI already registered"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # third-partyのAI情報を取得
 @app.get("/ais/{ai_name}", response_model=list[GetAisResponse])
 def get_ais(ai_name: str, user_id: str = Depends(get_current_user)):
-    pass
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                 # posgreSQLからAI情報を取得
+                cur.execute("""
+                    SELECT ai_id, user_id, ai_name, full_url
+                    FROM ai_endpoints
+                    WHERE ai_name = %s;
+                """, (ai_name,))
+                results = cur.fetchall()
+        return [
+            GetAisResponse(ai_id=str(r[0]), created_by_user_id=str(r[1]), ai_name=str(r[2]), full_url=r[3])
+            for r in results
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # third-partyのAIを更新
 @app.put("/ais/{ai_id}", response_model=UpdateAiResponse)
 def update_ai(request: UpdateAiRequest, ai_id: str, user_id: str = Depends(get_current_user)):
-    pass
-
-# third-partyのAIを削除
-@app.delete("/ais/{ai_id}", response_model=DeleteAiResponse)
-def delete_ai(ai_id: str, user_id: str = Depends(get_current_user)):
-    pass
+    if request.ai_name is None and request.full_url is None:
+        raise HTTPException(status_code=400, detail="No update fields")
+    now = datetime.now(timezone.utc)
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQL内のAI情報を修正
+                if request.ai_name is not None and request.full_url is not None:
+                    cur.execute("""
+                        UPDATE ai_endpoints
+                        SET ai_name = %s,
+                            full_url = %s,
+                            updated_at = %s
+                        WHERE ai_id = %s
+                        AND user_id = %s;
+                    """, (request.ai_name, request.full_url, now, ai_id, user_id))
+                elif request.ai_name is not None:
+                    cur.execute("""
+                        UPDATE ai_endpoints
+                        SET ai_name = %s,
+                            updated_at = %s
+                        WHERE ai_id = %s
+                        AND user_id = %s;
+                    """, (request.ai_name, now, ai_id, user_id))
+                elif request.full_url is not None:
+                    cur.execute("""
+                        UPDATE ai_endpoints
+                        SET full_url = %s,
+                            updated_at = %s
+                        WHERE ai_id = %s
+                        AND user_id = %s;
+                    """, (request.full_url, now, ai_id, user_id))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="AI not found")
+        return UpdateAiResponse(ai_id=str(ai_id))
+    except HTTPException:
+        raise
+    except UniqueViolation:
+        if conn:
+            conn.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="AI already exists"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # 新規対局作成
 @app.post("/games", response_model=InitGameResponse)
@@ -203,7 +400,7 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
             with conn.cursor() as cur:
                 sente_player_id = get_player_id(cur, request.sente_player_type, request.sente_user_id, request.sente_ai_id)
                 gote_player_id = get_player_id(cur, request.gote_player_type, request.gote_user_id, request.gote_ai_id)
-                # posgreSQLにgame_idを保存
+                # posgreSQLに対局情報を保存
                 cur.execute("""
                     INSERT INTO games (
                         game_id,
@@ -220,10 +417,11 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
                         %s,
                         %s,
                         %s
-                    )
-                    ON CONFLICT (game_id) DO NOTHING;
+                    );
                 """, (game_id, request.created_by_user_id, sente_player_id, gote_player_id, "PLAYING", now))
         return InitGameResponse(game_id=str(game_id))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -233,7 +431,30 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
 # 棋譜を取得
 @app.get("/games/{game_id}/kifu", response_model=GetKifuResponse)
 def get_kifu(game_id: str, user_id: str = Depends(get_current_user)):
-    pass
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQLから棋譜を取得
+                cur.execute("""
+                    SELECT kifu
+                    FROM games
+                    WHERE game_id = %s
+                    AND created_by_user_id = %s;
+                """, (game_id, user_id))
+                result = cur.fetchone()
+                if result is None:
+                    raise HTTPException(status_code=404, detail="Kifu not found")
+        return GetKifuResponse(kifu=result[0])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
 
 # 盤面更新
 @app.post("/games/{game_id}/moves", response_model=UpdateBoardResponse)
@@ -291,5 +512,29 @@ def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
 
 # 対局を終了
 @app.put("/games/{game_id}", response_model=EndGameResponse)
-def end_game(game_id: str, user_id: str = Depends(get_current_user)):
-    pass
+def end_game(request: EndGameRequest, game_id: str, user_id: str = Depends(get_current_user)):
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                # posgreSQL内の対局情報を修正（終了状態に）
+                cur.execute("""
+                    UPDATE games
+                    SET status = %s,
+                        result = %s
+                    WHERE game_id = %s
+                    AND created_by_user_id = %s
+                    AND status = %s;
+                """, ("FINISHED", request.result, game_id, user_id, "PLAYING"))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Game not found")
+        return EndGameResponse(status="FINISHED", result=request.result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
