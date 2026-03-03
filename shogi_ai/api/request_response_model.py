@@ -93,11 +93,11 @@ class UpdateBoardRequest(BaseModel):
 class UpdateBoardResponse(BaseModel):
     is_legal_move: bool
     kifu: str
-    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
-    result_type: Literal["CHECKMATE", "NYUGYOKU", "SENNICHITE", "RENZOKU_OTE_SENNICHITE", "MAX_MOVE"] | None
+    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None = None
+    result_type: Literal["CHECKMATE", "NYUGYOKU", "SENNICHITE", "RENZOKU_OTE_SENNICHITE", "MAX_MOVE"] | None = None
 
 
 class AiMoveResponse(BaseModel):
     kifu: str
-    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
-    result_type: Literal["CHECKMATE", "NYUGYOKU", "SENNICHITE", "RENZOKU_OTE_SENNICHITE", "MAX_MOVE"] | None
+    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None = None
+    result_type: Literal["CHECKMATE", "NYUGYOKU", "SENNICHITE", "RENZOKU_OTE_SENNICHITE", "MAX_MOVE"] | None = None
