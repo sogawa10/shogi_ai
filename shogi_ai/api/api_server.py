@@ -10,8 +10,13 @@ from psycopg2 import pool
 from psycopg2.errors import UniqueViolation
 from shogi_ai.api.api用関数 import *
 from shogi_ai.api.request_response_model import *
+from shogi_ai.対局用.盤面 import 盤面
+from shogi_ai.対局用.対局用関数 import *
+from shogi_ai.ai.ai import ai_think
 
 load_dotenv()
+
+DEPTH = int(os.getenv("AI_DEPTH"))
 
 # サーバーの起動から停止までのライフスパンを管理
 @asynccontextmanager
@@ -407,6 +412,7 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
                         created_by_user_id,
                         sente_player_id,
                         gote_player_id,
+                        kifu,
                         status,
                         created_at
                     )
@@ -416,9 +422,10 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
                         %s,
                         %s,
                         %s,
+                        %s,
                         %s
                     );
-                """, (game_id, request.created_by_user_id, sente_player_id, gote_player_id, "PLAYING", now))
+                """, (game_id, request.created_by_user_id, sente_player_id, gote_player_id, "", "PLAYING", now))
         return InitGameResponse(game_id=str(game_id))
     except HTTPException:
         raise
@@ -459,7 +466,10 @@ def get_kifu(game_id: str, user_id: str = Depends(get_current_user)):
 # 盤面更新
 @app.post("/games/{game_id}/moves", response_model=UpdateBoardResponse)
 def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depends(get_current_user)):
-    now = datetime.now(timezone.utc)
+    board = 盤面()
+    is_legal_move = False
+    game_result = None
+    game_result_type = None
     conn = None
     try:
         # posgreSQLに接続
@@ -467,14 +477,53 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
         with conn:
             with conn.cursor() as cur:
                 # posgreSQLからgame_idに対応する棋譜を取得し，盤面を復元
-                cur.execute("SQL文をここに記述")
+                cur.execute("""
+                    SELECT kifu
+                    FROM games
+                    WHERE game_id = %s
+                    AND created_by_user_id = %s;
+                """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
                     raise HTTPException(status_code=404, detail="Game not found")
-                # requestのmoveが合法か判断し，盤面を更新
+                kifu = result[0]
+                position_history, position_sequence = board.load_kifu(kifu)
+                move = request.move
+                now_move = move2te(move, board)
+                if now_move is None:
+                    return UpdateBoardResponse(is_legal_move=False, kifu=kifu)
+                # 盤面の合法手を生成する
+                board_moves = board.generate_board_moves(board.turn)
+                uchite = board.generate_uchite(board.turn)
+                legal_moves = board.filter_shogi_rules(board_moves, uchite)
+                # 入力された手が合法手かどうか確認する
+                for legal_move in legal_moves:
+                    if (
+                        type(legal_move.koma) is type(now_move.koma)
+                        and legal_move.from_pos == now_move.from_pos
+                        and legal_move.to_pos == now_move.to_pos
+                        and legal_move.nari == now_move.nari
+                        and legal_move.uchite == now_move.uchite
+                    ):
+                        is_legal_move = True
+                        break
+                if not is_legal_move:
+                    return UpdateBoardResponse(is_legal_move=is_legal_move, kifu=kifu)
+                # 手を盤面に適応
+                history = board.apply_move(now_move)
+                game_result, game_result_type = check_game_end(board, position_history, position_sequence)
                 # 棋譜に手を追加し，posgreSQLに保存
-                cur.execute("SQL文をここに記述")
-        return UpdateBoardResponse(kifu="dummy kifu")
+                kifu = (kifu + " " + move).strip()
+                cur.execute("""
+                    UPDATE games
+                    SET kifu = %s
+                    WHERE game_id = %s
+                    AND created_by_user_id = %s
+                    AND status = %s;
+                """, (kifu, game_id, user_id, "PLAYING"))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Game not found")
+        return UpdateBoardResponse(is_legal_move=is_legal_move, kifu=kifu, result=game_result, result_type=game_result_type)
     except HTTPException:
         raise
     except Exception as e:
@@ -486,7 +535,9 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
 # first-partyのAIの手を盤面に適応
 @app.post("/games/{game_id}/ai-move", response_model=AiMoveResponse)
 def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
-    now = datetime.now(timezone.utc)
+    board = 盤面()
+    game_result = None
+    game_result_type = None
     conn = None
     try:
         # posgreSQLに接続
@@ -494,14 +545,34 @@ def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
         with conn:
             with conn.cursor() as cur:
                 # posgreSQLからgame_idに対応する棋譜を取得し，盤面を復元
-                cur.execute("SQL文をここに記述")
+                cur.execute("""
+                    SELECT kifu
+                    FROM games
+                    WHERE game_id = %s
+                    AND created_by_user_id = %s;
+                """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
                     raise HTTPException(status_code=404, detail="Game not found")
+                kifu = result[0]
+                position_history, position_sequence = board.load_kifu(kifu)
                 # 盤面をAIに渡して次の手を取得し，盤面を更新
+                ai_move = ai_think(board, DEPTH)
+                move = ai_move.to_string()
+                history = board.apply_move(ai_move)
+                game_result, game_result_type = check_game_end(board, position_history, position_sequence)
                 # 棋譜に手を追加し，posgreSQLに保存
-                cur.execute("SQL文をここに記述")
-        return AiMoveResponse(kifu="dummy kifu")
+                kifu = (kifu + " " + move).strip()
+                cur.execute("""
+                    UPDATE games
+                    SET kifu = %s
+                    WHERE game_id = %s
+                    AND created_by_user_id = %s
+                    AND status = %s;
+                """, (kifu, game_id, user_id, "PLAYING"))
+                if cur.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Game not found")
+        return AiMoveResponse(kifu=kifu, result=game_result, result_type=game_result_type)
     except HTTPException:
         raise
     except Exception as e:

@@ -1,3 +1,4 @@
+import os
 import random
 import time
 from copy import deepcopy
@@ -6,9 +7,12 @@ from shogi_ai.駒 import *
 from shogi_ai.対局用.手 import 手
 from shogi_ai.対局用.対局用関数 import *
 from shogi_ai.ai.ai import ai_think
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def vs_ai():
-    depth = 4  # AIの思考深さ
+    depth = int(os.getenv("AI_DEPTH"))
     player_sente_or_gote = random.choice(["先手", "後手"])
     print()
     print("☆ あなたは「" + player_sente_or_gote + "」です ☆")

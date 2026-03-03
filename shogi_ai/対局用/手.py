@@ -9,7 +9,7 @@ class 手:
     uchite: bool=False
     komadori: object | None = None
 
-    def to_string(self, player_sente_or_gote):
+    def to_string(self, player_sente_or_gote="先手"):
         if self.koma.sente_or_gote() == "先手":
             turn = "▲"
         else:

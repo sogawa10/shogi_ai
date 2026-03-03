@@ -100,6 +100,69 @@ def input_move(board):
         return None
     return None
 
+def move2te(move, board):
+    move = move.strip()
+    if move[0] == "▲":
+        move_turn = "先手"
+    elif move[0] == "△":
+        move_turn = "後手"
+    else:
+        return None
+    if board.turn != move_turn:
+        return None
+    # 移動(成らず)
+    if len(move) == 8 and move[4] == "(" and move[7] == ")":
+        try:
+            tx, ty, fx, fy = int(move[1]) - 1, int(move[2]) - 1, int(move[5]) - 1, int(move[6]) - 1
+        except ValueError:
+            return None
+        if not (0 <= tx < 9 and 0 <= ty < 9 and 0 <= fx < 9 and 0 <= fy < 9):
+            return None
+        koma = board.board[fx][fy]
+        if koma is None or move[3] != koma.symbol(move_turn)[1]:
+            return None
+        cap_koma = board.board[tx][ty]
+        if cap_koma is not None and cap_koma.sente_or_gote() == move_turn:
+            return None
+        te = 手(koma, (fx, fy), (tx, ty), komadori=cap_koma)
+    # 移動(成り)
+    elif len(move) == 9 and move[4] == "成" and move[5] == "(" and move[8] == ")":
+        try:
+            tx, ty, fx, fy = int(move[1]) - 1, int(move[2]) - 1, int(move[6]) - 1, int(move[7]) - 1
+        except ValueError:
+            return None
+        if not (0 <= tx < 9 and 0 <= ty < 9 and 0 <= fx < 9 and 0 <= fy < 9):
+            return None
+        koma = board.board[fx][fy]
+        if koma is None or move[3] != koma.symbol(move_turn)[1]:
+            return None
+        cap_koma = board.board[tx][ty]
+        if cap_koma is not None and cap_koma.sente_or_gote() == move_turn:
+            return None
+        te = 手(koma, (fx, fy), (tx, ty), nari=True, komadori=cap_koma)
+    # 打ち
+    elif len(move) == 5 and move[3] in {"歩","角","飛","金","銀","桂","香"} and move[4] == "打":
+        kanji2class = {
+            "歩":歩, "角":角, "飛":飛, "金":金, "銀":銀, "桂":桂, "香":香
+        }
+        try:
+            tx, ty = int(move[1]) - 1, int(move[2]) - 1
+        except ValueError:
+            return None
+        if not (0 <= tx < 9 and 0 <= ty < 9):
+            return None
+        found = False
+        for koma in board.mochigoma[board.turn]:
+            if type(koma) is kanji2class[move[3]]:
+                found = True
+                te = 手(koma, None, (tx, ty), uchite=True)
+                break
+        if not found:
+            return None
+    else:
+        return None
+    return te
+
 # 千日手判定用（盤面をタプルに変換）
 def serialize_board(board):
     outer = []
@@ -174,3 +237,74 @@ def count_nyugyoku_points(board):
         else:
             score += 1
     return score, in_count
+
+def check_game_end(board, position_history, position_sequence):
+    # 終了判定
+    if board.is_checkmate(board.turn):
+        if board.turn == "先手":
+            result = "GOTE_WIN"
+        else:
+            result = "SENTE_WIN"
+        result_type = "CHECKMATE"
+    # 入玉宣言法
+    if ou_is_in_enemy_zone(board):
+        if not board.is_oute(board.turn):
+            if board.turn == "先手":
+                point = 28
+            else:
+                point = 27
+            score, in_count = count_nyugyoku_points(board)
+            if in_count >= 10 and score >= point:
+                if board.turn == "先手":
+                    result = "SENTE_WIN"
+                else:
+                    result = "GOTE_WIN"
+                result_type = "NYUGYOKU"
+    # 千日手判定
+    key = position_key(board)
+    is_oute = board.is_oute(board.turn)
+    if is_oute:
+        if board.turn == "先手":
+            enemy = "後手"
+        else:
+            enemy = "先手"
+    else:
+        enemy = None
+    position_history[key] = position_history.get(key, 0) + 1
+    position_sequence.append((key, enemy))
+    if position_history[key] == 4:
+        first = 0
+        for i, (past_key, _) in enumerate(position_sequence):
+            if past_key == key:
+                first = i
+                break
+        if position_sequence[first][1] is not None:
+            start_index = first
+        elif position_sequence[first - 1][1] is not None:
+            start_index = first - 1
+        else:
+            start_index = None
+        is_continuous_check = False
+        if start_index is not None:
+            oute_checker = position_sequence[start_index][1]
+            is_continuous_check = True
+            for i, (_, e) in enumerate(position_sequence[start_index:]):
+                if i % 2 == 1:
+                    continue
+                if e != oute_checker:
+                    is_continuous_check = False
+                    break
+        if is_continuous_check:
+            if oute_checker == "先手":
+                result = "GOTE_WIN"
+            else:
+                result = "SENTE_WIN"
+            result_type = "RENZOKU_OTE_SENNICHITE"
+        else:
+            result = "DRAW"
+            result_type = "SENNICHITE"
+    # 最大手数判定
+    if board.get_move_count() - 1 >= 500:
+        result = "DRAW"
+        result_type = "MAX_MOVE"
+    return result, result_type

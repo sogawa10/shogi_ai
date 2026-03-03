@@ -10,7 +10,7 @@ def evaluate(board, move, depth):
     board.ando_move(history)
     return score, move, node_count
 
-def ai_think(board, depth, player_sente_or_gote):
+def ai_think(board, depth, player_sente_or_gote="先手"):
     if board.move_count <= 4:
         move = opening_move(board)
         if move is not None:

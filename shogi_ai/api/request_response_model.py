@@ -88,14 +88,19 @@ class GetKifuResponse(BaseModel):
 
 
 class UpdateBoardRequest(BaseModel):
-    move: str | None = None
+    move: str
 
 class UpdateBoardResponse(BaseModel):
+    is_legal_move: bool
     kifu: str
+    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
+    result_type: Literal["CHECKMATE", "NYUGYOKU", "SENNICHITE", "RENZOKU_OTE_SENNICHITE", "MAX_MOVE"] | None
 
 
 class AiMoveResponse(BaseModel):
     kifu: str
+    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
+    result_type: Literal["CHECKMATE", "NYUGYOKU", "SENNICHITE", "RENZOKU_OTE_SENNICHITE", "MAX_MOVE"] | None
 
 
 class EndGameRequest(BaseModel):
