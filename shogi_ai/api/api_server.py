@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException
 from psycopg2 import pool
 from psycopg2.errors import UniqueViolation
+from fastapi.middleware.cors import CORSMiddleware
 from shogi_ai.api.api用関数 import *
 from shogi_ai.api.request_response_model import *
 from shogi_ai.対局用.盤面 import 盤面
@@ -38,6 +39,15 @@ async def lifespan(app: FastAPI):
     app.state.db_pool.closeall()
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    ## 本番環境では，allow_originsにReactがおかれているサーバーのurlを登録
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ユーザー登録
 @app.post("/users", response_model=RegisterUserResponse)
@@ -93,7 +103,7 @@ def register_user(request: RegisterUserRequest):
             conn.rollback()
         raise HTTPException(
             status_code=409,
-            detail="user_name already exists"
+            detail="⚠ このユーザー名は既に使用されています。"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -118,7 +128,7 @@ def get_user(user_id: str = Depends(get_current_user)):
                 """, (user_id,))
                 result = cur.fetchone()
                 if result is None:
-                    raise HTTPException(status_code=404, detail="User not found")
+                    raise HTTPException(status_code=404, detail="⚠ ユーザーが見つかりません。")
         return GetUserResponse(user_id=str(result[0]), user_name=result[1])
     except HTTPException:
         raise
@@ -160,7 +170,7 @@ def get_user_games(user_id: str = Depends(get_current_user)):
 @app.put("/users/me", response_model=UpdateUserResponse)
 def update_user(request: UpdateUserRequest, user_id: str = Depends(get_current_user)):
     if request.user_name is None and request.password is None:
-        raise HTTPException(status_code=400, detail="No update fields")
+        raise HTTPException(status_code=400, detail="⚠ 変更された項目がありません。")
     if request.password is not None:
         password_hash = bcrypt.hashpw(
             request.password.encode(),
@@ -197,7 +207,7 @@ def update_user(request: UpdateUserRequest, user_id: str = Depends(get_current_u
                         WHERE user_id = %s;
                     """, (password_hash, now, user_id))
                 if cur.rowcount == 0:
-                    raise HTTPException(status_code=404, detail="User not found")
+                    raise HTTPException(status_code=404, detail="⚠ ユーザーが見つかりません。")
         return UpdateUserResponse(user_id=str(user_id))
     except HTTPException:
         raise
@@ -206,7 +216,7 @@ def update_user(request: UpdateUserRequest, user_id: str = Depends(get_current_u
             conn.rollback()
         raise HTTPException(
             status_code=409,
-            detail="user_name already exists"
+            detail="⚠ このユーザー名は既に使用されています。"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -231,11 +241,11 @@ def login(request: LoginRequest):
                 """, (request.user_name,))
                 result = cur.fetchone()
                 if result is None:
-                    raise HTTPException(status_code=401, detail="Invalid user_name or password")
+                    raise HTTPException(status_code=401, detail="⚠ ユーザー名またはパスワードが正しくありません。")
                 user_id, password_hash = result
                 # パスワードを検証
                 if not bcrypt.checkpw(request.password.encode(), password_hash.encode()):
-                    raise HTTPException(status_code=401, detail="Invalid user_name or password")
+                    raise HTTPException(status_code=401, detail="⚠ ユーザー名またはパスワードが正しくありません。")
                 # アクセストークンを作成
                 access_token, exp = create_access_token(str(user_id))
 
@@ -300,7 +310,7 @@ def register_ai(request: RegisterAiRequest, user_id: str = Depends(get_current_u
             conn.rollback()
         raise HTTPException(
             status_code=409,
-            detail="AI already registered"
+            detail="⚠ このAIは既に存在しています。"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -340,7 +350,7 @@ def get_ais(ai_name: str, user_id: str = Depends(get_current_user)):
 @app.put("/ais/{ai_id}", response_model=UpdateAiResponse)
 def update_ai(request: UpdateAiRequest, ai_id: str, user_id: str = Depends(get_current_user)):
     if request.ai_name is None and request.full_url is None:
-        raise HTTPException(status_code=400, detail="No update fields")
+        raise HTTPException(status_code=400, detail="⚠ 変更された項目がありません。")
     now = datetime.now(timezone.utc)
     conn = None
     try:
@@ -375,7 +385,7 @@ def update_ai(request: UpdateAiRequest, ai_id: str, user_id: str = Depends(get_c
                         AND user_id = %s;
                     """, (request.full_url, now, ai_id, user_id))
                 if cur.rowcount == 0:
-                    raise HTTPException(status_code=404, detail="AI not found")
+                    raise HTTPException(status_code=404, detail="⚠ AIが見つかりません。")
         return UpdateAiResponse(ai_id=str(ai_id))
     except HTTPException:
         raise
@@ -384,7 +394,7 @@ def update_ai(request: UpdateAiRequest, ai_id: str, user_id: str = Depends(get_c
             conn.rollback()
         raise HTTPException(
             status_code=409,
-            detail="AI already exists"
+            detail="⚠ このAIは既に存在しています。"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -453,7 +463,7 @@ def get_kifu(game_id: str, user_id: str = Depends(get_current_user)):
                 """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
-                    raise HTTPException(status_code=404, detail="Kifu not found")
+                    raise HTTPException(status_code=404, detail="⚠ 棋譜が見つかりません。")
         return GetKifuResponse(kifu=result[0])
     except HTTPException:
         raise
@@ -485,7 +495,7 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
                 """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
-                    raise HTTPException(status_code=404, detail="Game not found")
+                    raise HTTPException(status_code=404, detail="⚠ 対局が見つかりません。")
                 kifu = result[0]
                 position_history, position_sequence = board.load_kifu(kifu)
                 move = request.move
@@ -524,7 +534,7 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
                     AND status = %s
                 """, (kifu, status, game_result, game_id, user_id, "PLAYING"))
                 if cur.rowcount == 0:
-                    raise HTTPException(status_code=404, detail="Game not found")
+                    raise HTTPException(status_code=404, detail="⚠ 対局が見つかりません。")
         return UpdateBoardResponse(is_legal_move=is_legal_move, kifu=kifu, result=game_result, result_type=game_result_type)
     except HTTPException:
         raise
@@ -568,7 +578,7 @@ def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
                 """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
-                    raise HTTPException(status_code=404, detail="Game not found")
+                    raise HTTPException(status_code=404, detail="⚠ 対局が見つかりません。")
                 kifu = result[0]
                 position_history, position_sequence = board.load_kifu(kifu)
                 # 盤面をAIに渡して次の手を取得し，盤面を更新
@@ -588,7 +598,7 @@ def ai_move(game_id: str, user_id: str = Depends(get_current_user)):
                     AND status = %s
                 """, (kifu, status, game_result, game_id, user_id, "PLAYING"))
                 if cur.rowcount == 0:
-                    raise HTTPException(status_code=404, detail="Game not found")
+                    raise HTTPException(status_code=404, detail="⚠ 対局が見つかりません。")
         return AiMoveResponse(kifu=kifu, result=game_result, result_type=game_result_type)
     except HTTPException:
         raise

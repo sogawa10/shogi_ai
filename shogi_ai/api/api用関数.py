@@ -22,7 +22,7 @@ def get_player_id(cur, player_type, user_id, ai_id):
         """, (user_id,))
         result = cur.fetchone()
         if result is None:
-            raise HTTPException(status_code=404, detail="User player not found")
+            raise HTTPException(status_code=404, detail="⚠ ユーザーが見つかりません。")
         return result[0]
 
     elif player_type == "THIRD_PARTY_AI":
@@ -33,7 +33,7 @@ def get_player_id(cur, player_type, user_id, ai_id):
         """, (ai_id,))
         result = cur.fetchone()
         if result is None:
-            raise HTTPException(status_code=404, detail="AI player not found")
+            raise HTTPException(status_code=404, detail="⚠ AIが見つかりません。")
         return result[0]
 
     elif player_type == "FIRST_PARTY_AI":
@@ -44,13 +44,13 @@ def get_player_id(cur, player_type, user_id, ai_id):
         """)
         result = cur.fetchone()
         if result is None:
-            raise HTTPException(status_code=404, detail="AI player not found")
+            raise HTTPException(status_code=404, detail="⚠ AIが見つかりません。")
         return result[0]
 
     else:
-        raise HTTPException(status_code=400, detail="Invalid player_type")
+        raise HTTPException(status_code=400, detail="⚠ プレイヤーのタイプが不正です。")
     
-# アクセストークン（JET：JSON Web Token）を作成
+# アクセストークン（JWT：JSON Web Token）を作成
 def create_access_token(user_id):
     # payload = JWTの中に入れるデータ
     exp = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -72,4 +72,4 @@ def get_current_user(credentials = Depends(security)):
         user_id = payload["user_id"]
         return user_id
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="⚠ 認証エラーです。")
