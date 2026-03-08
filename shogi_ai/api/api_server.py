@@ -18,6 +18,7 @@ from shogi_ai.ai.ai import ai_think
 load_dotenv()
 
 DEPTH = int(os.getenv("AI_DEPTH"))
+origins = os.getenv("ALLOW_ORIGINS")
 
 # サーバーの起動から停止までのライフスパンを管理
 @asynccontextmanager
@@ -42,8 +43,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    ## 本番環境では，allow_originsにReactがおかれているサーバーのurlを登録
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
