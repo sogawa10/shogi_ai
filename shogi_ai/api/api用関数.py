@@ -72,4 +72,4 @@ def get_current_user(credentials = Depends(security)):
         user_id = payload["user_id"]
         return user_id
     except JWTError:
-        raise HTTPException(status_code=401, detail="⚠ 認証エラーです。")
+        raise HTTPException(status_code=401, detail="⚠ 認証エラーです。 ログインしなおしてください。")
