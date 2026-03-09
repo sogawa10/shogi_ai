@@ -177,13 +177,13 @@ def get_user_ais(user_id: str = Depends(get_current_user)):
             with conn.cursor() as cur:
                  # posgreSQLからAI情報を取得
                 cur.execute("""
-                    SELECT ai_id, ai_name, full_url
+                    SELECT ai_id, user_id, ai_name, full_url
                     FROM ai_endpoints
                     WHERE user_id = %s;
                 """, (user_id,))
                 results = cur.fetchall()
         return [
-            GetUserAisResponse(ai_id=str(r[0]), ai_name=str(r[1]), full_url=str(r[2]))
+            GetUserAisResponse(ai_id=str(r[0]), created_by_user_id=str(r[1]), ai_name=str(r[2]), full_url=str(r[3]))
             for r in results
         ]
     except HTTPException:

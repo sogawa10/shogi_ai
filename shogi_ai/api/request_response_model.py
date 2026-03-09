@@ -29,6 +29,7 @@ class GetUserGamesResponse(BaseModel):
 
 class GetUserAisResponse(BaseModel):
     ai_id: str
+    created_by_user_id: str
     ai_name: str
     full_url: str
 
