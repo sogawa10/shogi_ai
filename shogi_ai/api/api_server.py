@@ -166,6 +166,34 @@ def get_user_games(user_id: str = Depends(get_current_user)):
         if conn:
             app.state.db_pool.putconn(conn)
 
+# third-partyのAI情報を取得（ユーザーIDによる検索）
+@app.get("/users/me/ais", response_model=list[GetUserAisResponse])
+def get_user_ais(user_id: str = Depends(get_current_user)):
+    conn = None
+    try:
+        # posgreSQLに接続
+        conn = app.state.db_pool.getconn()
+        with conn:
+            with conn.cursor() as cur:
+                 # posgreSQLからAI情報を取得
+                cur.execute("""
+                    SELECT ai_id, ai_name, full_url
+                    FROM ai_endpoints
+                    WHERE user_id = %s;
+                """, (user_id,))
+                results = cur.fetchall()
+        return [
+            GetUserAisResponse(ai_id=str(r[0]), ai_name=str(r[1]), full_url=str(r[2]))
+            for r in results
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            app.state.db_pool.putconn(conn)
+
 # ユーザーを更新
 @app.put("/users/me", response_model=UpdateUserResponse)
 def update_user(request: UpdateUserRequest, user_id: str = Depends(get_current_user)):
@@ -318,7 +346,7 @@ def register_ai(request: RegisterAiRequest, user_id: str = Depends(get_current_u
         if conn:
             app.state.db_pool.putconn(conn)
 
-# third-partyのAI情報を取得
+# third-partyのAI情報を取得（名前検索）
 @app.get("/ais/{ai_name}", response_model=list[GetAisResponse])
 def get_ais(ai_name: str, user_id: str = Depends(get_current_user)):
     conn = None

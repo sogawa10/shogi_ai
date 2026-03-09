@@ -27,6 +27,12 @@ class GetUserGamesResponse(BaseModel):
     result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
 
 
+class GetUserAisResponse(BaseModel):
+    ai_id: str
+    ai_name: str
+    full_url: str
+
+
 class UpdateUserRequest(BaseModel):
     user_name: str | None = None
     password: str | None = None
