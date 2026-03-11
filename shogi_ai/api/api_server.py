@@ -177,13 +177,20 @@ def get_user_ais(user_id: str = Depends(get_current_user)):
             with conn.cursor() as cur:
                  # posgreSQLからAI情報を取得
                 cur.execute("""
-                    SELECT ai_id, user_id, ai_name, full_url
-                    FROM ai_endpoints
-                    WHERE user_id = %s;
+                    SELECT 
+                        a.ai_id,
+                        a.user_id,
+                        u.user_name,
+                        a.ai_name,
+                        a.full_url
+                    FROM ai_endpoints a
+                    JOIN users u
+                        ON a.user_id = u.user_id
+                    WHERE a.user_id = %s;
                 """, (user_id,))
                 results = cur.fetchall()
         return [
-            GetUserAisResponse(ai_id=str(r[0]), created_by_user_id=str(r[1]), ai_name=str(r[2]), full_url=str(r[3]))
+            GetUserAisResponse(ai_id=str(r[0]), created_by_user_id=str(r[1]), created_by_user_name=str(r[2]), ai_name=str(r[3]), full_url=str(r[4]))
             for r in results
         ]
     except HTTPException:
@@ -357,13 +364,20 @@ def get_ais(ai_name: str, user_id: str = Depends(get_current_user)):
             with conn.cursor() as cur:
                  # posgreSQLからAI情報を取得
                 cur.execute("""
-                    SELECT ai_id, user_id, ai_name, full_url
-                    FROM ai_endpoints
-                    WHERE ai_name = %s;
+                    SELECT 
+                        a.ai_id,
+                        a.user_id,
+                        u.user_name,
+                        a.ai_name,
+                        a.full_url
+                    FROM ai_endpoints a
+                    JOIN users u
+                        ON a.user_id = u.user_id
+                    WHERE a.ai_name = %s;
                 """, (ai_name,))
                 results = cur.fetchall()
         return [
-            GetAisResponse(ai_id=str(r[0]), created_by_user_id=str(r[1]), ai_name=str(r[2]), full_url=r[3])
+            GetUserAisResponse(ai_id=str(r[0]), created_by_user_id=str(r[1]), created_by_user_name=str(r[2]), ai_name=str(r[3]), full_url=str(r[4]))
             for r in results
         ]
     except HTTPException:
