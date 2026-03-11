@@ -450,13 +450,24 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
     game_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
     conn = None
+
+    # playerのタイプがUSERなら，user_idを代入
+    if request.sente_player_type == "USER":
+        sente_user_id = user_id
+    else:
+        sente_user_id = None
+    if request.gote_player_type == "USER":
+        gote_user_id = user_id
+    else:
+        gote_user_id = None
+
     try:
         # posgreSQLに接続
         conn = app.state.db_pool.getconn()
         with conn:
             with conn.cursor() as cur:
-                sente_player_id = get_player_id(cur, request.sente_player_type, request.sente_user_id, request.sente_ai_id)
-                gote_player_id = get_player_id(cur, request.gote_player_type, request.gote_user_id, request.gote_ai_id)
+                sente_player_id = get_player_id(cur, request.sente_player_type, sente_user_id, request.sente_ai_id)
+                gote_player_id = get_player_id(cur, request.gote_player_type, gote_user_id, request.gote_ai_id)
                 # posgreSQLに対局情報を保存
                 cur.execute("""
                     INSERT INTO games (
