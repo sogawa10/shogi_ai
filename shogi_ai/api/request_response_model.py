@@ -78,7 +78,6 @@ class UpdateAiResponse(BaseModel):
 
 
 class InitGameRequest(BaseModel):
-    created_by_user_id: str
     sente_player_type: Literal["USER", "FIRST_PARTY_AI", "THIRD_PARTY_AI"]
     sente_user_id: str | None = None
     sente_ai_id: str | None = None

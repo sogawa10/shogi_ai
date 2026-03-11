@@ -463,7 +463,7 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
                         %s,
                         %s
                     );
-                """, (game_id, request.created_by_user_id, sente_player_id, gote_player_id, "", "PLAYING", now))
+                """, (game_id, user_id, sente_player_id, gote_player_id, "", "PLAYING", now))
         return InitGameResponse(game_id=str(game_id))
     except HTTPException:
         raise
