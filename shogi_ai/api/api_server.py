@@ -149,13 +149,48 @@ def get_user_games(user_id: str = Depends(get_current_user)):
             with conn.cursor() as cur:
                  # posgreSQLから対局情報を取得
                 cur.execute("""
-                    SELECT game_id, created_by_user_id, sente_player_id, gote_player_id, kifu, status, result
-                    FROM games
-                    WHERE created_by_user_id = %s;
+                    SELECT
+                        g.game_id,
+                        g.created_by_user_id,
+                        sp.player_type AS sente_player_type,
+                        CASE
+                            WHEN sp.player_type = 'FIRST_PARTY_AI' THEN 'デフォルトAI'
+                            ELSE COALESCE(su.user_name, sa.ai_name)
+                        END AS sente_name,
+                        CASE
+                            WHEN sp.player_type = 'THIRD_PARTY_AI' THEN sa.full_url
+                            ELSE NULL
+                        END AS sente_ai_url,
+                        gp.player_type AS gote_player_type,
+                        CASE
+                            WHEN gp.player_type = 'FIRST_PARTY_AI' THEN 'デフォルトAI'
+                            ELSE COALESCE(gu.user_name, ga.ai_name)
+                        END AS gote_name,
+                        CASE
+                            WHEN gp.player_type = 'THIRD_PARTY_AI' THEN ga.full_url
+                            ELSE NULL
+                        END AS gote_ai_url,
+                        g.kifu,
+                        g.status,
+                        g.result
+                    FROM games g
+                    LEFT JOIN players sp
+                        ON g.sente_player_id = sp.player_id
+                    LEFT JOIN users su
+                        ON sp.user_id = su.user_id
+                    LEFT JOIN ai_endpoints sa
+                        ON sp.ai_id = sa.ai_id
+                    LEFT JOIN players gp
+                        ON g.gote_player_id = gp.player_id
+                    LEFT JOIN users gu
+                        ON gp.user_id = gu.user_id
+                    LEFT JOIN ai_endpoints ga
+                        ON gp.ai_id = ga.ai_id
+                    WHERE g.created_by_user_id = %s;
                 """, (user_id,))
                 results = cur.fetchall()
         return [
-            GetUserGamesResponse(game_id=str(r[0]), created_by_user_id=str(r[1]), sente_player_id=str(r[2]), gote_player_id=str(r[3]), kifu=r[4], status=r[5], result=r[6])
+            GetUserGamesResponse(game_id=str(r[0]), created_by_user_id=str(r[1]), sente_player_type=r[2], sente_name=r[3], sente_ai_url=r[4], gote_player_type=r[5], gote_name=r[6], gote_ai_url=r[7], kifu=r[8], status=r[9], result=r[10])
             for r in results
         ]
     except HTTPException:
@@ -370,13 +405,10 @@ def get_ais(name: str, user_id: str = Depends(get_current_user)):
                         u.user_name,
                         a.ai_name,
                         a.full_url
-                    FROM 
-                        ai_endpoints a
-                    JOIN 
-                        users u
+                    FROM ai_endpoints a
+                    JOIN users u
                         ON a.user_id = u.user_id
-                    WHERE
-                        a.ai_name ILIKE %s
+                    WHERE a.ai_name ILIKE %s
                         OR u.user_name ILIKE %s;
                 """, ("%" + name + "%", "%" + name + "%"))
                 results = cur.fetchall()
@@ -502,9 +534,9 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
         if conn:
             app.state.db_pool.putconn(conn)
 
-# 棋譜を取得
-@app.get("/games/{game_id}/kifu", response_model=GetKifuResponse)
-def get_kifu(game_id: str, user_id: str = Depends(get_current_user)):
+# 対局情報を取得
+@app.get("/games/{game_id}", response_model=GetGameResponse)
+def get_game(game_id: str, user_id: str = Depends(get_current_user)):
     conn = None
     try:
         # posgreSQLに接続
@@ -513,15 +545,50 @@ def get_kifu(game_id: str, user_id: str = Depends(get_current_user)):
             with conn.cursor() as cur:
                 # posgreSQLから棋譜を取得
                 cur.execute("""
-                    SELECT kifu
-                    FROM games
-                    WHERE game_id = %s
-                    AND created_by_user_id = %s;
+                    SELECT
+                        g.game_id,
+                        g.created_by_user_id,
+                        sp.player_type AS sente_player_type,
+                        CASE
+                            WHEN sp.player_type = 'FIRST_PARTY_AI' THEN 'デフォルトAI'
+                            ELSE COALESCE(su.user_name, sa.ai_name)
+                        END AS sente_name,
+                        CASE
+                            WHEN sp.player_type = 'THIRD_PARTY_AI' THEN sa.full_url
+                            ELSE NULL
+                        END AS sente_ai_url,
+                        gp.player_type AS gote_player_type,
+                        CASE
+                            WHEN gp.player_type = 'FIRST_PARTY_AI' THEN 'デフォルトAI'
+                            ELSE COALESCE(gu.user_name, ga.ai_name)
+                        END AS gote_name,
+                        CASE
+                            WHEN gp.player_type = 'THIRD_PARTY_AI' THEN ga.full_url
+                            ELSE NULL
+                        END AS gote_ai_url,
+                        g.kifu,
+                        g.status,
+                        g.result
+                    FROM games g
+                    LEFT JOIN players sp
+                        ON g.sente_player_id = sp.player_id
+                    LEFT JOIN users su
+                        ON sp.user_id = su.user_id
+                    LEFT JOIN ai_endpoints sa
+                        ON sp.ai_id = sa.ai_id
+                    LEFT JOIN players gp
+                        ON g.gote_player_id = gp.player_id
+                    LEFT JOIN users gu
+                        ON gp.user_id = gu.user_id
+                    LEFT JOIN ai_endpoints ga
+                        ON gp.ai_id = ga.ai_id
+                    WHERE g.game_id = %s
+                    AND g.created_by_user_id = %s;
                 """, (game_id, user_id))
                 result = cur.fetchone()
                 if result is None:
-                    raise HTTPException(status_code=404, detail="⚠ 棋譜が見つかりません。")
-        return GetKifuResponse(kifu=result[0])
+                    raise HTTPException(status_code=404, detail="⚠ 対局が見つかりません。")
+        return GetGameResponse(game_id=str(result[0]), created_by_user_id=str(result[1]), sente_player_type=result[2], sente_name=result[3], sente_ai_url=result[4], gote_player_type=result[5], gote_name=result[6], gote_ai_url=result[7], kifu=result[8], status=result[9], result=result[10])
     except HTTPException:
         raise
     except Exception as e:

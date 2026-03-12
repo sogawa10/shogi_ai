@@ -20,8 +20,12 @@ class GetUserResponse(BaseModel):
 class GetUserGamesResponse(BaseModel):
     game_id: str
     created_by_user_id: str
-    sente_player_id: str
-    gote_player_id: str
+    sente_player_type: str
+    sente_name: str
+    sente_ai_url: str | None
+    gote_player_type: str
+    gote_name: str
+    gote_ai_url: str | None
     kifu: str
     status: Literal["PLAYING", "FINISHED", "ABORTED"]
     result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
@@ -89,8 +93,18 @@ class InitGameResponse(BaseModel):
     game_id: str
 
 
-class GetKifuResponse(BaseModel):
+class GetGameResponse(BaseModel):
+    game_id: str
+    created_by_user_id: str
+    sente_player_type: str
+    sente_name: str
+    sente_ai_url: str | None
+    gote_player_type: str
+    gote_name: str
+    gote_ai_url: str | None
     kifu: str
+    status: Literal["PLAYING", "FINISHED", "ABORTED"]
+    result: Literal["SENTE_WIN", "GOTE_WIN", "DRAW"] | None
 
 
 class UpdateBoardRequest(BaseModel):
