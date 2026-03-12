@@ -353,9 +353,9 @@ def register_ai(request: RegisterAiRequest, user_id: str = Depends(get_current_u
         if conn:
             app.state.db_pool.putconn(conn)
 
-# third-partyのAI情報を取得（名前検索）
-@app.get("/ais/{ai_name}", response_model=list[GetAisResponse])
-def get_ais(ai_name: str, user_id: str = Depends(get_current_user)):
+# third-partyのAI情報を取得（AIかUSERの名前検索・大文字小文字の区別なし・部分一致検索）
+@app.get("/ais/{name}", response_model=list[GetAisResponse])
+def get_ais(name: str, user_id: str = Depends(get_current_user)):
     conn = None
     try:
         # posgreSQLに接続
@@ -370,11 +370,15 @@ def get_ais(ai_name: str, user_id: str = Depends(get_current_user)):
                         u.user_name,
                         a.ai_name,
                         a.full_url
-                    FROM ai_endpoints a
-                    JOIN users u
+                    FROM 
+                        ai_endpoints a
+                    JOIN 
+                        users u
                         ON a.user_id = u.user_id
-                    WHERE a.ai_name = %s;
-                """, (ai_name,))
+                    WHERE
+                        a.ai_name ILIKE %s
+                        OR u.user_name ILIKE %s;
+                """, ("%" + name + "%", "%" + name + "%"))
                 results = cur.fetchall()
         return [
             GetUserAisResponse(ai_id=str(r[0]), created_by_user_id=str(r[1]), created_by_user_name=str(r[2]), ai_name=str(r[3]), full_url=str(r[4]))
