@@ -22,7 +22,7 @@ DEPTH = int(os.getenv("AI_DEPTH"))
 ABORT_GAMES_INTERVAL = int(os.getenv("ABORT_GAMES_INTERVAL"))
 origins = os.getenv("ALLOW_ORIGINS")
 
-# 定期的に60分以上操作されていない対局をABORTEDにする
+# 定期的に操作されていない対局をABORTEDにする
 async def abort_games():
     while True:
         now = datetime.now(timezone.utc)
