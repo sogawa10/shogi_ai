@@ -103,7 +103,7 @@ def evaluate(board):
 def tree_search(board, depth, alpha, beta):
     # リーフ
     if board.is_checkmate(board.turn):
-        return -100000 + depth, 1
+        return -100000 - depth, 1
     if depth == 0:
         return evaluate(board), 1
     # ノード
