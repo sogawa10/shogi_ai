@@ -5,6 +5,7 @@ import psycopg2.extras
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+import asyncio
 from fastapi import FastAPI, Depends, HTTPException
 from psycopg2 import pool
 from psycopg2.errors import UniqueViolation
@@ -18,7 +19,31 @@ from shogi_ai.ai.ai import ai_think
 load_dotenv()
 
 DEPTH = int(os.getenv("AI_DEPTH"))
+ABORT_GAMES_INTERVAL = int(os.getenv("ABORT_GAMES_INTERVAL"))
 origins = os.getenv("ALLOW_ORIGINS")
+
+# 定期的に60分以上操作されていない対局をABORTEDにする
+async def abort_games():
+    while True:
+        now = datetime.now(timezone.utc)
+        # posgreSQLに接続
+        conn = None
+        try:
+            conn = app.state.db_pool.getconn()
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        UPDATE games
+                        SET status = 'ABORTED'
+                        WHERE status = 'PLAYING'
+                        AND updated_at < %s - (%s * INTERVAL '1 minute');
+                    """, (now, ABORT_GAMES_INTERVAL))
+        except Exception as e:
+            print("abort error:", e)
+        finally:
+            if conn:
+                app.state.db_pool.putconn(conn)
+        await asyncio.sleep(60)
 
 # サーバーの起動から停止までのライフスパンを管理
 @asynccontextmanager
@@ -27,7 +52,7 @@ async def lifespan(app: FastAPI):
     psycopg2.extras.register_uuid()
     app.state.db_pool = pool.SimpleConnectionPool(
         minconn=1,
-        maxconn=10,
+        maxconn=20,
         host=os.getenv("DB_HOST"),
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
@@ -35,6 +60,7 @@ async def lifespan(app: FastAPI):
         port=os.getenv("DB_PORT")
     )
     # サーバー稼働中
+    task = asyncio.create_task(abort_games())
     yield
     # 終了時（データベースプールを閉じる）
     app.state.db_pool.closeall()
@@ -513,7 +539,8 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
                         gote_player_id,
                         kifu,
                         status,
-                        created_at
+                        created_at,
+                        updated_at
                     )
                     VALUES (
                         %s,
@@ -522,9 +549,10 @@ def init_game(request: InitGameRequest, user_id: str = Depends(get_current_user)
                         %s,
                         %s,
                         %s,
+                        %s,
                         %s
                     );
-                """, (game_id, user_id, sente_player_id, gote_player_id, "", "PLAYING", now))
+                """, (game_id, user_id, sente_player_id, gote_player_id, "", "PLAYING", now, now))
         return InitGameResponse(game_id=str(game_id))
     except HTTPException:
         raise
@@ -600,6 +628,7 @@ def get_game(game_id: str, user_id: str = Depends(get_current_user)):
 # 盤面更新
 @app.post("/games/{game_id}/moves", response_model=UpdateBoardResponse)
 def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depends(get_current_user)):
+    now = datetime.now(timezone.utc)
     board = 盤面()
     is_legal_move = False
     status = "PLAYING"
@@ -652,11 +681,11 @@ def update_board(request: UpdateBoardRequest, game_id: str, user_id: str = Depen
                 kifu = (kifu + " " + move).strip()
                 cur.execute("""
                     UPDATE games
-                    SET kifu = %s, status = %s, result = %s
+                    SET kifu = %s, status = %s, result = %s, updated_at = %s
                     WHERE game_id = %s
                     AND created_by_user_id = %s
                     AND status = %s
-                """, (kifu, status, game_result, game_id, user_id, "PLAYING"))
+                """, (kifu, status, game_result, now, game_id, user_id, "PLAYING"))
                 if cur.rowcount == 0:
                     raise HTTPException(status_code=404, detail="⚠ 対局が見つかりません。")
         return UpdateBoardResponse(is_legal_move=is_legal_move, kifu=kifu, result=game_result, result_type=game_result_type)

@@ -53,7 +53,7 @@
 
 ## データベースの構造
 
-![Image](https://github.com/user-attachments/assets/ecb615b0-13ef-4772-b2ef-e053ffcb9f9c)
+![Image](https://github.com/user-attachments/assets/8babc227-a45f-42f0-b501-ce0135570fea)
 
 ### ER図の属性については，以下を参考にしてください．
 
@@ -110,6 +110,8 @@
    → SENTE_WIN・GOTE_WIN・DRAW・NULL のいずれか．
    - created_at\
    → レコードが作成された日時．
+   - updated_at\
+   → レコードが最後に更新された日時．
 
 ### PostgreSQLでデータベースを構築する際は，以下を参考にしてください．
 

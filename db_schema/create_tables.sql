@@ -34,5 +34,6 @@ CREATE TABLE IF NOT EXISTS games (
     kifu TEXT,
     status VARCHAR(10) NOT NULL,
     result VARCHAR(10),
-    created_at TIMESTAMPTZ NOT NULL
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
 );
