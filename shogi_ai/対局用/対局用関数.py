@@ -119,7 +119,7 @@ def move2te(move, board):
         if not (0 <= tx < 9 and 0 <= ty < 9 and 0 <= fx < 9 and 0 <= fy < 9):
             return None
         koma = board.board[fx][fy]
-        if koma is None or move[3] != koma.symbol(move_turn)[1]:
+        if koma is None or move[3] != koma.symbol()[1]:
             return None
         cap_koma = board.board[tx][ty]
         if cap_koma is not None and cap_koma.sente_or_gote() == move_turn:
@@ -134,7 +134,7 @@ def move2te(move, board):
         if not (0 <= tx < 9 and 0 <= ty < 9 and 0 <= fx < 9 and 0 <= fy < 9):
             return None
         koma = board.board[fx][fy]
-        if koma is None or move[3] != koma.symbol(move_turn)[1]:
+        if koma is None or move[3] != koma.symbol()[1]:
             return None
         cap_koma = board.board[tx][ty]
         if cap_koma is not None and cap_koma.sente_or_gote() == move_turn:
