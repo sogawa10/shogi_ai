@@ -17,12 +17,12 @@ class 王(駒):
     def symbol(self, player_sente_or_gote = "先手"):
         if player_sente_or_gote == "先手":
             if self.sente_gote == "先手":
-                symbol = "↑王"
+                symbol = "↑玉"
             else:
-                symbol = "↓玉"
+                symbol = "↓王"
         else:
             if self.sente_gote == "先手":
-                symbol = "↓王"
+                symbol = "↓玉"
             else:
-                symbol = "↑玉"
+                symbol = "↑王"
         return symbol
